@@ -87,20 +87,26 @@ def format_calendar_grid(calendar_grid, day_order, time_slots_display):
     return grid_output
 
 
-def list_programs(programs, courses, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None, save_txt=None,
+def list_programs(programs, courses, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None,
+                  save_txt=None,
                   include_schedule=None, limit_results=None):
-    filtered_programs = programs
-    if filter_function:
-        filtered_programs = list(filter(filter_function, filtered_programs))
-
-    if sort_function:
-        filtered_programs = sorted(filtered_programs, key=sort_function)
-
     output_text = ""  # Initialize an empty string to store the output
 
+    summarized_programs = programs
+    if filter_function:
+        summarized_programs = list(filter(filter_function, summarized_programs))
+        output_text += "Filter functions: "
+        #output_text += str(filter_function)
+
+    if sort_function:
+        summarized_programs = sorted(summarized_programs, key=sort_function)
+        output_text += "Sort functions: "
+        #output_text += sort_function
+
+
     if print_wanted or save_txt:  # Include schedule in the condition
-        for i, program in enumerate(filtered_programs):
-            if limit_results and limit_results < i+1:
+        for i, program in enumerate(summarized_programs):
+            if limit_results and limit_results < i + 1:
                 break
             program_with_index = program.copy()  # To avoid modifying original program
             program_with_index["program_index"] = i + 1  # Add program index for output
@@ -119,4 +125,4 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
                 print(f"Error saving to '{save_txt}': {e}")  # Handle potential file writing errors
 
     if return_wanted:
-        return filtered_programs
+        return summarized_programs

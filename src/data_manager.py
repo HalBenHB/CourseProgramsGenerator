@@ -1,13 +1,11 @@
 import openpyxl
 import json
 import os
+from src import config
+import pickle
 
-DATA_FOLDER = "data"  # Define data folder name
-COURSES_FILENAME = "Courses.xlsx"
-REQUIREMENTS_FILENAME = "requirements.json"
-
-COURSES_FILEPATH = os.path.join(DATA_FOLDER, COURSES_FILENAME)
-REQUIREMENTS_FILEPATH = os.path.join(DATA_FOLDER, REQUIREMENTS_FILENAME)
+COURSES_FILEPATH = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.COURSES_FILENAME)
+REQUIREMENTS_FILEPATH = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.REQUIREMENTS_FILENAME)
 
 
 def load_requirements_from_json():
@@ -63,3 +61,31 @@ def course_parses():
                     "schedule"   : schedule_list,
                 }
     return courses
+
+
+
+def load_possible_programs(file_path):
+    """Loads possible programs from a pickle file."""
+    try:
+        with open(file_path, 'rb') as f:
+            possible_programs = pickle.load(f)
+        print(f"Loaded programs from '{file_path}'.")  # Keep print for info
+        return possible_programs
+    except FileNotFoundError:
+        print(f"File not found: '{file_path}'. No programs loaded.")
+        return None  # Indicate no programs loaded, not an error in loading itself
+    except Exception as e:  # Catch other potential loading errors
+        print(f"Error loading programs from '{file_path}': {e}")
+        return None
+
+
+def save_possible_programs(programs, file_path):
+    """Saves possible programs to a pickle file."""
+    try:
+        with open(file_path, 'wb') as f:
+            pickle.dump(programs, f)
+        print(f"Programs saved to '{file_path}'.")  # Keep print for info
+        return True  # Indicate success
+    except Exception as e:
+        print(f"Error saving programs to '{file_path}': {e}")
+        return False  # Indicate failure
