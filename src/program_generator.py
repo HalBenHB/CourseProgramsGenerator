@@ -1,9 +1,5 @@
 import operator
 
-min_credit = 34
-max_credit = 43
-possible_programs = []
-
 
 def check_satisfied(needed, count):
     # Define a dictionary to map operators to their corresponding functions
@@ -54,13 +50,12 @@ def parse_time_slot(time_slot_str):
 
 # Helper function to check if two time slots overlap
 def check_program_course_conflict(current_program_param, candidate_schedule_param):
-    for current_program_time_slot in current_program_param["schedule"]:
-        for candidate_schedule_time_slot in candidate_schedule_param:
-
-            compare1 = parse_time_slot(candidate_schedule_time_slot)
-            compare2 = parse_time_slot(current_program_time_slot)
-            if compare1[0] == compare2[0]:
-                if compare1[1] < compare2[2] and compare1[2] > compare2[1]:
+    for current_day, current_start, current_end in (parse_time_slot(slot) for slot in
+                                                    current_program_param["schedule"]):
+        for candidate_day, candidate_start, candidate_end in (parse_time_slot(slot) for slot in
+                                                              candidate_schedule_param):
+            if candidate_day == current_day:
+                if candidate_start < current_end and candidate_end > current_start:
                     return True  # Conflict
     return False  # No conflict
 
@@ -81,7 +76,7 @@ def calculate_program_stats(program, courses):
     return program
 
 
-def is_program_valid(program, requirements, courses):
+def is_program_valid(program, requirements, courses, min_credit, max_credit):
     total_credits = sum(int(courses[course_code]['credits']) for course_code in program['courses'])
     if not (min_credit <= total_credits <= max_credit):
         return False
@@ -99,7 +94,8 @@ def is_program_valid(program, requirements, courses):
     return True
 
 
-def generate_programs(requirement_index, current_program_courses, requirements, courses):
+def _generate_programs(requirement_index, current_program_courses, requirements, courses, min_credit, max_credit,
+                       possible_programs):
     if requirement_index == len(requirements):
         program = {
             "courses" : current_program_courses,
@@ -108,7 +104,7 @@ def generate_programs(requirement_index, current_program_courses, requirements, 
         for course_code in current_program_courses:
             program["schedule"].extend(courses[course_code]["schedule"])
 
-        if is_program_valid(program,requirements,courses):
+        if is_program_valid(program, requirements, courses, min_credit, max_credit):
             # print(f"Found valid program: {program}")
             possible_programs.append(program)
         return
@@ -137,7 +133,8 @@ def generate_programs(requirement_index, current_program_courses, requirements, 
 
         if candidate_index == len(course_options):  # Reached end of candidates for this requirement
             if check_satisfied(needed_condition, courses_taken_for_req):  # Check if we satisfied the needed condition
-                generate_programs(requirement_index + 1, current_program_courses, requirements,courses)  # Move to next requirement
+                _generate_programs(requirement_index + 1, current_program_courses, requirements,
+                                   courses, min_credit, max_credit, possible_programs)  # Move to next requirement
             return
 
         # Option A: Don't take the current candidate course
@@ -160,3 +157,30 @@ def generate_programs(requirement_index, current_program_courses, requirements, 
                                                   updated_program_courses)
 
     generate_combinations_for_requirement(0, 0, current_program_courses.copy())
+
+
+def generate_programs(requirements, courses, min_credit_param, max_credit_param):
+    """
+    Generates a list of possible course programs that satisfy the given requirements and credit limits.
+
+    Args:
+        requirements: A list of requirement dictionaries.
+        courses: A dictionary of course information, keyed by course code.
+        min_credit: The minimum total credits for a valid program.
+        max_credit: The maximum total credits for a valid program.
+
+    Returns:
+        A list of dictionaries, where each dictionary represents a valid course program.
+        Each program dictionary contains 'courses' (list of course codes), 'schedule' (combined schedule),
+        'total_credit', 'total_days', and 'total_hours'.
+    """
+
+
+    possible_programs = []
+
+    # Defaults
+    min_credit = 30 if min_credit_param is None else min_credit_param
+    max_credit = 42 if max_credit_param is None else max_credit_param
+
+    _generate_programs(0, [], requirements, courses, min_credit, max_credit, possible_programs)
+    return possible_programs

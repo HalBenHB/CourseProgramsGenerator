@@ -87,14 +87,14 @@ def format_calendar_grid(calendar_grid, day_order, time_slots_display):
     return grid_output
 
 
-def list_programs(programs, courses, filter_func=None, sort_func=None, print_wanted=None, return_wanted=None, save_txt=None,
+def list_programs(programs, courses, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None, save_txt=None,
                   include_schedule=None, limit_results=None):
     filtered_programs = programs
-    if filter_func:
-        filtered_programs = list(filter(filter_func, filtered_programs))
+    if filter_function:
+        filtered_programs = list(filter(filter_function, filtered_programs))
 
-    if sort_func:
-        filtered_programs = sorted(filtered_programs, key=sort_func)
+    if sort_function:
+        filtered_programs = sorted(filtered_programs, key=sort_function)
 
     output_text = ""  # Initialize an empty string to store the output
 
