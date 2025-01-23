@@ -1,0 +1,78 @@
+[
+  {
+    "requirement_name": "CS",
+    "candidates": [
+      "CS 333",
+      "CS 350",
+      "CS 447"
+    ],
+    "needed": "=1"
+  },
+  {
+    "requirement_name": "Compulsory",
+    "candidates": [
+      "BUS 301",
+      "BUS 302",
+      "MGMT 401",
+      "SEC 402"
+    ],
+    "needed": "<=4"
+  },
+  {
+    "requirement_name": "Compulsory2",
+    "candidates": [
+      "MGMT 402.A",
+      "MGMT 402.B"
+    ],
+    "needed": "<=1"
+  },
+  {
+    "requirement_name": "ProgramFIN",
+    "candidates": [
+      "FIN 301",
+      "FIN 302",
+      "FIN 312"
+    ],
+    "needed": "<=1"
+  },
+  {
+    "requirement_name": "ProgramMGMT",
+    "candidates": [
+      "MGMT 306",
+      "MGMT 311"
+    ],
+    "needed": "<=1"
+  },
+  {
+    "requirement_name": "ProgramMIS",
+    "candidates": [
+      "MIS 203",
+      "MIS 306"
+    ],
+    "needed": "<=1"
+  },
+  {
+    "requirement_name": "Speciality",
+    "candidates": [
+      "MGMT 312",
+      "MGMT 317",
+      "MGMT 404",
+      "FIN 204",
+      "FIN 314",
+      "FIN 412",
+      "MIS 104",
+      "MIS 304",
+      "MIS 317",
+      "MIS 321",
+      "MIS 324",
+      "MKTG 311",
+      "MKTG 312",
+      "MKTG 313",
+      "MKTG 315",
+      "MKTG 417",
+      "OPER 312",
+      "OPER 314"
+    ],
+    "needed": "<=3"
+  }
+]
