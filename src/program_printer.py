@@ -7,7 +7,7 @@ def format_program_info(program, courses, include_schedule):
     for course_code in program['courses']:
         program_output += f" {course_code} |"
     program_output += "\n"
-    program_output += f"Total Credits: {program['total_credit']}\n"
+    program_output += f"Total Credits: {program['total_credits']}\n"
     program_output += f"Total Days: {program['total_days']}\n"
     program_output += f"Total Hours: {program['total_hours']:.2f}\n\n"
 
@@ -22,7 +22,7 @@ def format_program_schedule(program, courses):
     schedule_by_day = {}
     for course_code in program['courses']:
         course_data = courses[course_code]
-        for time_slot in course_data['schedule']:
+        for time_slot in course_data.schedule:
             day = time_slot['day']
             interval = time_slot['interval']
             if day not in schedule_by_day:
@@ -30,7 +30,7 @@ def format_program_schedule(program, courses):
             schedule_by_day[day].append({
                 'interval'   : interval,
                 'course_code': course_code,
-                'course_name': course_data['course_name']})
+                'course_name': course_data.course_name})
 
     day_order = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"]
     time_slots_display = [
@@ -99,7 +99,7 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
         #output_text += str(filter_function)
 
     if sort_function:
-        summarized_programs = sorted(summarized_programs, key=sort_function)
+        summarized_programs = list(sorted(summarized_programs, key=sort_function,reverse=True))
         output_text += "Sort functions: "
         #output_text += sort_function
 

@@ -5,7 +5,7 @@ from src import config
 import os
 
 requirements = load_requirements_from_json()
-courses = course_parses()
+courses = course_parses(requirements)
 
 if __name__ == '__main__':
     programs_file = config.generation["programs_file_path"]
