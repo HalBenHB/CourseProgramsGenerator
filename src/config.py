@@ -4,14 +4,14 @@ from datetime import datetime
 generation = {
     "min_credit"             : 30,
     "max_credit"             : 42,
-    "load_programs_from_file": True,  # Default to generating, change to True to load
-    "save_programs_to_file"  : False,  # Default to saving, keep True to save after generation
+    "load_programs_from_file": False,  # Default to generating, change to True to load
+    "save_programs_to_file"  : True,  # Default to saving, keep True to save after generation
 }
 
 output = {
-    "limit_results"   : 100,
-    "filter_function" : False, #lambda program: "CS 350" in program['total_days'] == 3,
-    "sort_function"   : lambda x: x['total_hours'],
+    "limit_results"   : None,
+    "filter_function" : lambda program: "CS 447" not in program['courses'] and ("BUS 301" in program['courses'] or "BUS 302" in program['courses']),
+    "sort_function"   : lambda x: x['total_days'],
     "print_output"    : False,
     "return_output"   : True,
     "save_file"       : True,

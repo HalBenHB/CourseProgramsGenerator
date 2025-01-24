@@ -73,6 +73,6 @@
       "OPER 312.A",
       "OPER 314.A"
     ],
-    "needed": "<=3"
+    "needed": "<=1"
   }
 ]
