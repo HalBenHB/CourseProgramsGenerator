@@ -2,8 +2,8 @@ import os
 from datetime import datetime
 
 generation = {
-    "min_credit"             : 0,
-    "max_credit"             : 999,
+    "min_credit"             : 30,
+    "max_credit"             : 42,
     "load_programs_from_file": False,  # Default to generating, change to True to load
     "save_programs_to_file"  : True,  # Default to saving, keep True to save after generation
 }
