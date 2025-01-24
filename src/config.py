@@ -8,7 +8,7 @@ generation = {
     "save_programs_to_file": False,  # Default to saving, keep True to save after generation
 }
 
-exclude_courses = None#["CS 447.A", "MGMT 311.A"]
+exclude_courses = ["CS 447.A", "MGMT 311.A", "MIS "]
 include_courses = ["BUS 301.A", "BUS 302.A"]
 
 exclude_condition = "(" + " and ".join(
@@ -22,6 +22,7 @@ conditions.append(include_condition) if include_condition else None
 filter_condition_str = " and ".join(conditions) if conditions else None
 
 sort_condition_str = "x['total_days']"
+sort_reverse = False
 
 output = {
     "limit_results": None,
@@ -29,6 +30,7 @@ output = {
     "filter_description": filter_condition_str,
     "sort_function": eval(f"lambda x: {sort_condition_str}") if sort_condition_str else None,
     "sort_description": sort_condition_str,
+    "sort_reverse": sort_reverse,
     "print_output": False,
     "return_output": True,
     "save_file": True,

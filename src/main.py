@@ -35,4 +35,5 @@ if __name__ == '__main__':
                                      include_schedule=config.output["include_schedule"],
                                      limit_results=config.output["limit_results"],
                                      filter_description=config.output["filter_description"],
-                                     sort_description = config.output["sort_description"])
+                                     sort_description = config.output["sort_description"],
+                                     sort_reverse=config.output["sort_reverse"])

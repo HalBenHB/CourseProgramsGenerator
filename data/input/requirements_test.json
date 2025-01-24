@@ -49,7 +49,7 @@
       "MIS 203.A",
       "MIS 306.A"
     ],
-    "needed": "<=1"
+    "needed": "<=0"
   },
   {
     "requirement_name": "Speciality",
@@ -73,6 +73,6 @@
       "OPER 312.A",
       "OPER 314.A"
     ],
-    "needed": "<=1"
+    "needed": "<=0"
   }
 ]

@@ -89,7 +89,7 @@ def format_calendar_grid(calendar_grid, day_order, time_slots_display):
 
 def list_programs(programs, courses, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None,
                   save_txt=None, include_schedule=None, limit_results=None, filter_description=None,
-                  sort_description=None):
+                  sort_description=None, sort_reverse=False):
     output_text = ""  # Initialize an empty string to store the output
 
     summarized_programs = programs
@@ -99,7 +99,7 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
         print(f"Filtered. Remained {len(summarized_programs)} programs")
 
     if sort_function:
-        summarized_programs = list(sorted(summarized_programs, key=sort_function, reverse=True))
+        summarized_programs = list(sorted(summarized_programs, key=sort_function, reverse=sort_reverse))
         output_text += "Sorted by: " + sort_description + "\n"
         print(f"Sorted by: {sort_description}")
 
