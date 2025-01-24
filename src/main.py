@@ -14,6 +14,7 @@ if __name__ == '__main__':
     if config.generation["load_programs_from_file"] and os.path.exists(programs_file):
         print(f"Loading possible programs from '{programs_file}'...")
         possible_programs = load_possible_programs(programs_file)
+        print(f"Loaded {len(possible_programs)} possible programs:")
 
     else:  # Generate
         print("Generating possible programs...")
@@ -32,4 +33,6 @@ if __name__ == '__main__':
                                      return_wanted=config.output["return_output"],
                                      save_txt=config.output["save_file"],
                                      include_schedule=config.output["include_schedule"],
-                                     limit_results=config.output["limit_results"])
+                                     limit_results=config.output["limit_results"],
+                                     filter_description=config.output["filter_description"],
+                                     sort_description = config.output["sort_description"])

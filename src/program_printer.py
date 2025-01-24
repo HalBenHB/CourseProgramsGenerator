@@ -2,14 +2,14 @@ from src.program_generator import time_to_minutes
 
 
 def format_program_info(program, courses, include_schedule):
-    program_output = f"Program {program['program_index']}:\n"  # Assuming you will add program_index when calling this
+    program_output = f"\nProgram {program['program_index']}:\n"  # Assuming you will add program_index when calling this
     program_output += "Courses:"
     for course_code in program['courses']:
         program_output += f" {course_code} |"
     program_output += "\n"
     program_output += f"Total Credits: {program['total_credits']}\n"
     program_output += f"Total Days: {program['total_days']}\n"
-    program_output += f"Total Hours: {program['total_hours']:.2f}\n\n"
+    program_output += f"Total Hours: {program['total_hours']:.2f}\n"
 
     if include_schedule:
         program_output += format_program_schedule(program, courses)  # Call helper for schedule formatting
@@ -18,7 +18,7 @@ def format_program_info(program, courses, include_schedule):
 
 
 def format_program_schedule(program, courses):
-    schedule_output = "\nWeekly Schedule:\n"
+    schedule_output = "Weekly Schedule:\n"
     schedule_by_day = {}
     for course_code in program['courses']:
         course_data = courses[course_code]
@@ -28,7 +28,7 @@ def format_program_schedule(program, courses):
             if day not in schedule_by_day:
                 schedule_by_day[day] = []
             schedule_by_day[day].append({
-                'interval'   : interval,
+                'interval': interval,
                 'course_code': course_code,
                 'course_name': course_data.course_name})
 
@@ -88,30 +88,33 @@ def format_calendar_grid(calendar_grid, day_order, time_slots_display):
 
 
 def list_programs(programs, courses, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None,
-                  save_txt=None,
-                  include_schedule=None, limit_results=None):
+                  save_txt=None, include_schedule=None, limit_results=None, filter_description=None,
+                  sort_description=None):
     output_text = ""  # Initialize an empty string to store the output
 
     summarized_programs = programs
     if filter_function:
         summarized_programs = list(filter(filter_function, summarized_programs))
-        output_text += "Filter functions: "
-        #output_text += str(filter_function)
+        output_text += "Filter functions: " + filter_description + "\n"
+        print(f"Filtered. Remained {len(summarized_programs)} programs")
 
     if sort_function:
-        summarized_programs = list(sorted(summarized_programs, key=sort_function,reverse=True))
-        output_text += "Sort functions: "
-        #output_text += sort_function
-
+        summarized_programs = list(sorted(summarized_programs, key=sort_function, reverse=True))
+        output_text += "Sorted by: " + sort_description + "\n"
+        print(f"Sorted by: {sort_description}")
 
     if print_wanted or save_txt:  # Include schedule in the condition
+        output_text += "Total programs: " + str(len(summarized_programs)) + "\n"
         for i, program in enumerate(summarized_programs):
-            if limit_results and limit_results < i + 1:
+            program_index = i+1
+            if limit_results and limit_results < program_index:
                 break
             program_with_index = program.copy()  # To avoid modifying original program
-            program_with_index["program_index"] = i + 1  # Add program index for output
+            program_with_index["program_index"] = program_index  # Add program index for output
             program_output = format_program_info(program_with_index, courses, include_schedule)
             output_text += program_output  # Append to the output string
+            print('\r'+f'Output generated: {program_index}', end='')
+
 
         if print_wanted:  # Print to console if print_wanted is True
             print(program_output, end="")  # print without adding extra newline as program_output already has

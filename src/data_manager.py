@@ -102,7 +102,7 @@ def load_possible_programs(file_path):
     try:
         with open(file_path, 'rb') as f:
             possible_programs = pickle.load(f)
-        print(f"Loaded programs from '{file_path}'.")  # Keep print for info
+        #print(f"Loaded programs from '{file_path}'.")  # Keep print for info
         return possible_programs
     except FileNotFoundError:
         print(f"File not found: '{file_path}'. No programs loaded.")
