@@ -14,6 +14,7 @@ if __name__ == '__main__':
     if config.generation["load_programs_from_file"] and os.path.exists(programs_file):
         print(f"Loading possible programs from '{programs_file}'...")
         possible_programs = load_possible_programs(programs_file)
+        print(f"Found {len(possible_programs)} possible programs:")
 
     else:  # Generate
         print("Generating possible programs...")

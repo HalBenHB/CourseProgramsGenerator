@@ -7,7 +7,7 @@ def format_program_info(program, courses, include_schedule):
     for course_code in program['courses']:
         program_output += f" {course_code} |"
     program_output += "\n"
-    program_output += f"Total Credits: {program['total_credit']}\n"
+    program_output += f"Total Credits: {program['total_credits']}\n"
     program_output += f"Total Days: {program['total_days']}\n"
     program_output += f"Total Hours: {program['total_hours']:.2f}\n\n"
 
@@ -95,11 +95,12 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
     summarized_programs = programs
     if filter_function:
         summarized_programs = list(filter(filter_function, summarized_programs))
+        print (f"Filtered. Remained {len(summarized_programs)} programs")
         output_text += "Filter functions: "
         #output_text += str(filter_function)
 
     if sort_function:
-        summarized_programs = sorted(summarized_programs, key=sort_function)
+        summarized_programs = list(sorted(summarized_programs, key=sort_function))
         output_text += "Sort functions: "
         #output_text += sort_function
 

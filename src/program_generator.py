@@ -89,7 +89,7 @@ def is_program_valid(program, requirements, courses, min_credit, max_credit):
         if not check_satisfied(req['needed'], count):
             return False
 
-    program["total_credit"] = total_credits  # Correctly calculate total_credit here
+    program["total_credits"] = total_credits  # Correctly calculate total_credits here
     program = calculate_program_stats(program, courses)  # Calculate total_days and total_hours
     return True
 
@@ -172,7 +172,7 @@ def generate_programs(requirements, courses, min_credit_param, max_credit_param)
     Returns:
         A list of dictionaries, where each dictionary represents a valid course program.
         Each program dictionary contains 'courses' (list of course codes), 'schedule' (combined schedule),
-        'total_credit', 'total_days', and 'total_hours'.
+        'total_credits', 'total_days', and 'total_hours'.
     """
 
 
