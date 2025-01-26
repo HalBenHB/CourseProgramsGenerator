@@ -1,27 +1,42 @@
 import os
 from datetime import datetime
 
+from pandas.core.config_init import max_cols
+
+# Set generation parameters here
+min_credit = 31
+max_credit = 42
+#Set output filter and sort functions here
+day_conditions = ["<5"]
+exclude_courses = ["CS 447.A"]
+include_courses = ["BUS 302.A"]
+must_courses = None  # ["CS 333.A"]
+sort_condition_str = "x['total_days']"
+
+#config
 generation = {
-    "min_credit": 30,
-    "max_credit": 42,
+    "min_credit": min_credit,
+    "max_credit": max_credit,
     "load_programs_from_file": True,  # Default to generating, change to True to load
     "save_programs_to_file": False,  # Default to saving, keep True to save after generation
 }
 
-exclude_courses = ["CS 447.A", "MGMT 311.A", "MIS "]
-include_courses = ["BUS 301.A", "BUS 302.A"]
-
+day_condition = "(" + " and ".join(
+    f'program["total_days"] {day_cond}' for day_cond in day_conditions) + ")" if day_conditions else False
 exclude_condition = "(" + " and ".join(
     [f'"{course}" not in program["courses"]' for course in exclude_courses]) + ")" if exclude_courses else False
 include_condition = "(" + " or ".join(
     [f'"{course}" in program["courses"]' for course in include_courses]) + ")" if include_courses else False
+must_condition = "(" + " and ".join(
+    [f'"{course}" in program["courses"]' for course in must_courses]) + ")" if must_courses else False
 
 conditions = []
+conditions.append(day_condition) if day_condition else None
 conditions.append(exclude_condition) if exclude_condition else None
 conditions.append(include_condition) if include_condition else None
+conditions.append(must_condition) if must_condition else None
 filter_condition_str = " and ".join(conditions) if conditions else None
 
-sort_condition_str = "x['total_days']"
 sort_reverse = False
 
 output = {
