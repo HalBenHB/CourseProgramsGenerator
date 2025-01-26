@@ -8,20 +8,22 @@ requirements_parameter = "requirements_olcay.json"
 # Set generation parameters here
 min_credit = 29
 max_credit = 42
+load_programs_if_saved = True
+save_programs_after_generation = True
 
 #Set output filter and sort functions here
 day_conditions = None #["<5"]
 exclude_courses = None #["CS 447.A"]
 include_courses = None #["BUS 302.A"]
 must_courses = None  # ["CS 333.A"]
-sort_condition_str = "x['total_days']"
+sort_condition_str = "program['total_days']"
 
 #config
 generation = {
     "min_credit": min_credit,
     "max_credit": max_credit,
-    "load_programs_from_file": False,  # Default to generating, change to True to load
-    "save_programs_to_file": False,  # Default to saving, keep True to save after generation
+    "load_programs_from_file": load_programs_if_saved,  # Default to generating, change to True to load
+    "save_programs_to_file": save_programs_after_generation,  # Default to saving, keep True to save after generation
 }
 
 day_condition = "(" + " and ".join(
@@ -46,7 +48,7 @@ output = {
     "limit_results": None,
     "filter_function": eval(f"lambda program: {filter_condition_str}") if filter_condition_str else None,
     "filter_description": filter_condition_str,
-    "sort_function": eval(f"lambda x: {sort_condition_str}") if sort_condition_str else None,
+    "sort_function": eval(f"lambda program: {sort_condition_str}") if sort_condition_str else None,
     "sort_description": sort_condition_str,
     "sort_reverse": sort_reverse,
     "print_output": False,
@@ -68,4 +70,4 @@ else:
     output["save_file"] = False
 
 generation["programs_file_path"] = os.path.join(DATA_FOLDER, INPUT_FOLDER,
-                                                f"possible_programs_{generation['min_credit']}-{generation['max_credit']}.pkl")
+                                                f"possible_programs_{REQUIREMENTS_FILENAME.replace('.json','')}-min_{generation['min_credit']}-max_{generation['max_credit']}.pkl")
