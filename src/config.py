@@ -1,15 +1,18 @@
 import os
 from datetime import datetime
 
-from pandas.core.config_init import max_cols
+
+# Set requirements
+requirements_parameter = "requirements_olcay.json"
 
 # Set generation parameters here
-min_credit = 31
+min_credit = 29
 max_credit = 42
+
 #Set output filter and sort functions here
-day_conditions = ["<5"]
-exclude_courses = ["CS 447.A"]
-include_courses = ["BUS 302.A"]
+day_conditions = None #["<5"]
+exclude_courses = None #["CS 447.A"]
+include_courses = None #["BUS 302.A"]
 must_courses = None  # ["CS 333.A"]
 sort_condition_str = "x['total_days']"
 
@@ -17,7 +20,7 @@ sort_condition_str = "x['total_days']"
 generation = {
     "min_credit": min_credit,
     "max_credit": max_credit,
-    "load_programs_from_file": True,  # Default to generating, change to True to load
+    "load_programs_from_file": False,  # Default to generating, change to True to load
     "save_programs_to_file": False,  # Default to saving, keep True to save after generation
 }
 
@@ -56,7 +59,7 @@ DATA_FOLDER = "data"
 INPUT_FOLDER = "input"
 OUTPUT_FOLDER = "output"
 COURSES_FILENAME = "course_offered_2425F.xls"
-REQUIREMENTS_FILENAME = "requirements_test.json"
+REQUIREMENTS_FILENAME = requirements_parameter
 
 if output["save_file"]:
     output["save_file"] = os.path.join(DATA_FOLDER, OUTPUT_FOLDER,

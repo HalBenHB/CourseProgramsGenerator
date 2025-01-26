@@ -30,15 +30,17 @@ def course_parses(requirements=None):
     df = pd.read_excel(COURSES_FILEPATH)
 
     courses = {}
+    candidate_courses = [candidate_course for candidate_courses_list in
+                         [requirement["candidates"] for requirement in requirements] for candidate_course in
+                         candidate_courses_list]
     for index, row in df.iterrows():
         subject_code = str(row['SUBJECT']).strip() if pd.notna(row['SUBJECT']) else None
         course_no = str(row['COURSENO']).strip() if pd.notna(row['COURSENO']) else None
         section_no = str(row['SECTIONNO']).strip() if pd.notna(row['SECTIONNO']) else None
         full_course_code = f"{subject_code} {course_no}.{section_no}"
         if requirements:
-            if full_course_code not in [candidate_course for candidate_course in
-                                        [requirement["candidates"] for requirement in requirements]]:
-                pass
+            if full_course_code not in candidate_courses:
+                continue
         course_id = f"{subject_code} {course_no}"
 
         title = str(row['TITLE']).strip() if pd.notna(row['TITLE']) else None
@@ -102,7 +104,7 @@ def load_possible_programs(file_path):
     try:
         with open(file_path, 'rb') as f:
             possible_programs = pickle.load(f)
-        #print(f"Loaded programs from '{file_path}'.")  # Keep print for info
+        # print(f"Loaded programs from '{file_path}'.")  # Keep print for info
         return possible_programs
     except FileNotFoundError:
         print(f"File not found: '{file_path}'. No programs loaded.")
