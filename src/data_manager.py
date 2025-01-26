@@ -5,29 +5,27 @@ from src import config
 import pickle
 
 from src.course_models import CourseSection, Course
-from src.requirements_model import FullCourseCodeCandidate, CourseIdCandidate, Requirement
-
-COURSES_FILEPATH = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.COURSES_FILENAME)
-REQUIREMENTS_FILEPATH = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.REQUIREMENTS_FILENAME)
-
 
 def load_requirements_from_json():
+    requirements_filepath = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.REQUIREMENTS_FILENAME)
+
     """Loads requirements from a JSON file."""
     try:
-        with open(REQUIREMENTS_FILEPATH, 'r', encoding='utf-8') as f:
+        with open(requirements_filepath, 'r', encoding='utf-8') as f:
             requirements_data = json.load(f)
         return requirements_data
     except FileNotFoundError:
-        print(f"Error: Requirements file not found at '{REQUIREMENTS_FILEPATH}'.")
+        print(f"Error: Requirements file not found at '{requirements_filepath}'.")
         return None  # Or raise an exception if you prefer
     except json.JSONDecodeError:
-        print(f"Error: Invalid JSON format in '{REQUIREMENTS_FILEPATH}'.")
+        print(f"Error: Invalid JSON format in '{requirements_filepath}'.")
         return None  # Or raise an exception
 
 
 def course_parses(requirements=None):
+    courses_filepath = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.COURSES_FILENAME)
     # Load the Excel workbook
-    df = pd.read_excel(COURSES_FILEPATH)
+    df = pd.read_excel(courses_filepath)
 
     courses = {}
     candidate_courses = [candidate_course for candidate_courses_list in
@@ -100,6 +98,7 @@ def course_parses(requirements=None):
 
 
 def load_possible_programs(file_path):
+
     """Loads possible programs from a pickle file."""
     try:
         with open(file_path, 'rb') as f:
