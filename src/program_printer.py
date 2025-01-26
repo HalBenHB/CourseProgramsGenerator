@@ -69,21 +69,26 @@ def format_program_schedule(program, courses):
 
 
 def format_calendar_grid(calendar_grid, day_order, time_slots_display):
+    course_code_len = max(len(course_code) for day in day_order for course_code in calendar_grid[day])
+
     grid_output = ""
-    grid_output += "---------------------------------------------------------------------\n"
-    grid_output += "| {:<10}".format("Time")  # Time column header
+    separator_length = ((course_code_len + 2) * 5) + 13
+    separator = "-" * separator_length + "\n"
+    grid_output += separator
+
+    grid_output += "| {:<{}}".format("Time", 11)  # Time column header
     for day in day_order:
-        grid_output += "| {:<10}".format(day)  # Day column headers
+        grid_output += "| {:<{}}".format(day, course_code_len)  # Day column headers
     grid_output += "|\n"
-    grid_output += "---------------------------------------------------------------------\n"
+    grid_output += separator
 
     for time_index, time_slot in enumerate(time_slots_display):
-        grid_output += "| {:<10}".format(time_slot)  # Time slot label
+        grid_output += "| {:<{}}".format(time_slot, 11)  # Time slot label
         for day in day_order:
             course_code = calendar_grid[day][time_index]
-            grid_output += "| {:<10}".format(course_code)  # Course code or empty slot
+            grid_output += "| {:<{}}".format(course_code, course_code_len)  # Course code or empty slot
         grid_output += "|\n"
-    grid_output += "---------------------------------------------------------------------\n"
+    grid_output += separator
     return grid_output
 
 
@@ -106,15 +111,14 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
     if print_wanted or save_txt:  # Include schedule in the condition
         output_text += "Total programs: " + str(len(summarized_programs)) + "\n"
         for i, program in enumerate(summarized_programs):
-            program_index = i+1
+            program_index = i + 1
             if limit_results and limit_results < program_index:
                 break
             program_with_index = program.copy()  # To avoid modifying original program
             program_with_index["program_index"] = program_index  # Add program index for output
             program_output = format_program_info(program_with_index, courses, include_schedule)
             output_text += program_output  # Append to the output string
-            print('\r'+f'Output generated: {program_index}', end='')
-
+            print('\r' + f'Output generated: {program_index}', end='')
 
         if print_wanted:  # Print to console if print_wanted is True
             print(program_output, end="")  # print without adding extra newline as program_output already has

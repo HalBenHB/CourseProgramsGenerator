@@ -12,11 +12,16 @@ load_programs_if_saved = True
 save_programs_after_generation = True
 
 #Set output filter and sort functions here
+limit_number_of_programs = 5
 day_conditions = None #["<5"]
 exclude_courses = None #["CS 447.A"]
 include_courses = None #["BUS 302.A"]
 must_courses = None  # ["CS 333.A"]
 sort_condition_str = "program['total_days']"
+
+#Set output parameters
+print_output = False
+save_output = True
 
 #config
 generation = {
@@ -45,15 +50,15 @@ filter_condition_str = " and ".join(conditions) if conditions else None
 sort_reverse = False
 
 output = {
-    "limit_results": None,
+    "limit_results": limit_number_of_programs,
     "filter_function": eval(f"lambda program: {filter_condition_str}") if filter_condition_str else None,
     "filter_description": filter_condition_str,
     "sort_function": eval(f"lambda program: {sort_condition_str}") if sort_condition_str else None,
     "sort_description": sort_condition_str,
     "sort_reverse": sort_reverse,
-    "print_output": False,
+    "print_output": print_output,
     "return_output": True,
-    "save_file": True,
+    "save_file": save_output,
     "include_schedule": True
 }
 
