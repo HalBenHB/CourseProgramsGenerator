@@ -1,63 +1,93 @@
+# src/main.py
+
 from src.program_printer import list_programs
 from src.data_manager import course_parses, load_requirements_from_json, save_possible_programs, load_possible_programs
 from src.program_generator import generate_programs
 from src import config
 import os
 
-# Set requirements
-config.requirements_parameter = "requirements.json"
+def run_program_generation(app_config):
+    """
+    Main logic for generating and listing programs.
+    This function is designed to be called from the GUI or other scripts.
 
-# Set generation parameters here
-config.min_credit = 29
-config.max_credit = 42
-config.load_programs_if_saved = True
-config.save_programs_after_generation = True
+    Args:
+        app_config (dict): A dictionary containing 'generation' and 'output' settings.
 
-# Set output filter and sort functions here
-config.limit_number_of_programs = 5
-config.day_conditions = None  # ["<5"]
-config.exclude_courses = None  # ["CS 447.A"]
-config.include_courses = None  # ["BUS 302.A"]
-config.must_courses = None  # ["CS 333.A"]
-config.sort_condition_str = "program['total_days']"
+    Returns:
+        tuple: (list of program dicts, log string, path of the auto-saved file)
 
-# Set output parameters
-config.print_output = False
-config.save_output = True
+    """
+    # Load requirements and courses based on config
+    requirements = load_requirements_from_json() # Assumes config.REQUIREMENTS_FILEPATH is set
+    if not requirements:
+        return [], "Error: Could not load requirements file.", None
 
+    # We now pass the requirements to course_parses to potentially speed it up
+    courses = course_parses(requirements=requirements)
+    if not courses:
+        return [], "Error: Could not parse courses file.", None
 
-# main.py
-config.update_config()
-requirements = load_requirements_from_json()
-courses = course_parses()
+    programs_file = app_config["generation"]["programs_file_path"]
+    min_credit = app_config["generation"]["min_credit"]
+    max_credit = app_config["generation"]["max_credit"]
+    output_str = ""
+
+    # --- MODIFIED --- New, robust caching logic
+    cache_hit = False
+    if app_config["generation"]["load_programs_from_file"] and os.path.exists(programs_file):
+        output_str += f"Potential cache file found at '{os.path.basename(programs_file)}'. Validating...\n"
+        cached_data = load_possible_programs(programs_file)
+
+        if cached_data and isinstance(cached_data, dict) and 'metadata' in cached_data:
+            # Validate if the cached data was generated with the exact same parameters
+            metadata = cached_data['metadata']
+            if metadata.get('requirements') == requirements and metadata.get('credits') == (min_credit, max_credit):
+                output_str += "Cache is valid. Loading programs from cache.\n"
+                possible_programs = cached_data['programs']
+                cache_hit = True
+            else:
+                output_str += "Cache is stale (requirements or credit limits differ). Regenerating programs.\n"
+        else:
+            output_str += "Cache file is invalid or old format. Regenerating programs.\n"
+
+    if not cache_hit:
+        output_str += "Generating possible programs... (This may take a while)\n"
+        possible_programs = generate_programs(requirements, courses, min_credit, max_credit)
+        output_str += f"Found {len(possible_programs)} possible programs.\n"
+
+        if app_config["generation"]["save_programs_to_file"]:
+            output_str += f"Saving possible programs to cache file '{os.path.basename(programs_file)}'...\n"
+            # Pass the metadata to be saved with the programs
+            save_possible_programs(possible_programs, programs_file, requirements, min_credit, max_credit)
+
+    # Filter, sort, and format the output
+    # IMPORTANT: We set print_wanted=False and return_wanted=True to capture the output string
+    summarized_programs, formatted_output = list_programs(possible_programs, courses,
+                                     filter_function=app_config["output"]["filter_function"],
+                                     sort_function=app_config["output"]["sort_function"],
+                                     print_wanted=False, # We will display this in the GUI, not print to console
+                                     return_wanted=True, # We need the programs and the text output
+                                     save_txt=app_config["output"]["save_file"],
+                                     include_schedule=app_config["output"]["include_schedule"],
+                                     limit_results=app_config["output"]["limit_results"],
+                                     filter_description=app_config["output"]["filter_description"],
+                                     sort_description=app_config["output"]["sort_description"],
+                                     sort_reverse=app_config["output"]["sort_reverse"])
+
+    # If a file was saved, add that info to the output
+    if app_config["output"]["save_file"]:
+         output_str += f"\nFormatted output also saved to file: {app_config['output']['save_file']}\n"
+
+    output_str += formatted_output
+    auto_save_path = app_config["output"]["save_file"]
+    return summarized_programs, output_str, auto_save_path
+
 
 if __name__ == '__main__':
-    programs_file = config.generation["programs_file_path"]
-
-    # Load
-    if config.generation["load_programs_from_file"] and os.path.exists(programs_file):
-        print(f"Loading possible programs from '{programs_file}'...")
-        possible_programs = load_possible_programs(programs_file)
-        print(f"Loaded {len(possible_programs)} possible programs:")
-
-    else:  # Generate
-        print("Generating possible programs...")
-        possible_programs = generate_programs(requirements, courses, config.generation["min_credit"],
-                                              config.generation["max_credit"])
-        print(f"Found {len(possible_programs)} possible programs:")
-
-        if config.generation["save_programs_to_file"]:
-            print(f"Saving possible programs to '{programs_file}'...")
-            save_successful = save_possible_programs(possible_programs, programs_file)
-
-    fetched_programs = list_programs(possible_programs, courses,
-                                     filter_function=config.output["filter_function"],
-                                     sort_function=config.output["sort_function"],
-                                     print_wanted=config.output["print_output"],
-                                     return_wanted=config.output["return_output"],
-                                     save_txt=config.output["save_file"],
-                                     include_schedule=config.output["include_schedule"],
-                                     limit_results=config.output["limit_results"],
-                                     filter_description=config.output["filter_description"],
-                                     sort_description=config.output["sort_description"],
-                                     sort_reverse=config.output["sort_reverse"])
+    # This part allows you to still run main.py as a standalone script for testing
+    print("Running main.py as a script...")
+    config.update_config() # Use default config
+    app_config = {"generation": config.generation, "output": config.output}
+    results = run_program_generation(app_config)
+    print(results)

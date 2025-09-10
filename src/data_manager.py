@@ -101,30 +101,36 @@ def course_parses(requirements=None):
 
     return courses
 
-
+# --- MODIFIED --- This function now returns the entire data structure
 def load_possible_programs(file_path):
-
-    """Loads possible programs from a pickle file."""
+    """Loads the entire data structure (metadata and programs) from a pickle file."""
     try:
         with open(file_path, 'rb') as f:
-            possible_programs = pickle.load(f)
-        # print(f"Loaded programs from '{file_path}'.")  # Keep print for info
-        return possible_programs
+            data = pickle.load(f)
+        return data
     except FileNotFoundError:
-        print(f"File not found: '{file_path}'. No programs loaded.")
-        return None  # Indicate no programs loaded, not an error in loading itself
-    except Exception as e:  # Catch other potential loading errors
+        return None
+    except Exception as e:
         print(f"Error loading programs from '{file_path}': {e}")
         return None
 
+# --- MODIFIED --- This function now saves the programs along with metadata
+def save_possible_programs(programs, file_path, requirements, min_credit, max_credit):
+    """Saves possible programs along with their generation metadata to a pickle file."""
 
-def save_possible_programs(programs, file_path):
-    """Saves possible programs to a pickle file."""
+    data_to_save = {
+        "metadata": {
+            "requirements": requirements,
+            "credits": (min_credit, max_credit)
+        },
+        "programs": programs
+    }
+
     try:
         with open(file_path, 'wb') as f:
-            pickle.dump(programs, f)
-        print(f"Programs saved to '{file_path}'.")  # Keep print for info
-        return True  # Indicate success
+            pickle.dump(data_to_save, f)
+        print(f"Programs and metadata saved to '{file_path}'.")
+        return True
     except Exception as e:
         print(f"Error saving programs to '{file_path}': {e}")
-        return False  # Indicate failure
+        return False

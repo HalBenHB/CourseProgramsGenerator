@@ -109,16 +109,16 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
         print(f"Sorted by: {sort_description}")
 
     if print_wanted or save_txt:  # Include schedule in the condition
-        output_text += "Total programs: " + str(len(summarized_programs)) + "\n"
+        number_of_total_programs = str(len(summarized_programs))
+        output_text += "Total programs: " + number_of_total_programs + "\n"
         for i, program in enumerate(summarized_programs):
             program_index = i + 1
             if limit_results and limit_results < program_index:
                 break
-            program_with_index = program.copy()  # To avoid modifying original program
-            program_with_index["program_index"] = program_index  # Add program index for output
-            program_output = format_program_info(program_with_index, courses, include_schedule)
+            program["program_index"] = program_index  # Add program index for output
+            program_output = format_program_info(program, courses, include_schedule)
             output_text += program_output  # Append to the output string
-            print('\r' + f'Output generated: {program_index}', end='')
+            print(f'\rOutput generated: {program_index}/{number_of_total_programs}', end='', flush=True)
 
         if print_wanted:  # Print to console if print_wanted is True
             print(program_output, end="")  # print without adding extra newline as program_output already has
@@ -132,4 +132,4 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
                 print(f"Error saving to '{save_txt}': {e}")  # Handle potential file writing errors
 
     if return_wanted:
-        return summarized_programs
+        return summarized_programs, output_text

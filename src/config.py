@@ -6,7 +6,7 @@ from datetime import datetime
 requirements_parameter = "requirements_olcay.json"
 
 # Set generation parameters here
-min_credit = 29
+min_credit = 30
 max_credit = 42
 load_programs_if_saved = True
 save_programs_after_generation = True
@@ -18,6 +18,7 @@ exclude_courses = None  # ["CS 447.A"]
 include_courses = None  # ["BUS 302.A"]
 must_courses = None  # ["CS 333.A"]
 sort_condition_str = "program['total_days']"
+sort_reverse = False
 
 # Set output parameters
 print_output = False
@@ -38,7 +39,7 @@ def update_config():
     root_dir = os.path.dirname(os.path.dirname(__file__))
     requirements_filename = requirements_parameter
     REQUIREMENTS_FILEPATH = os.path.join(root_dir,"data","input",requirements_filename)
-    courses_filename = "course_offered_2425F.xls"
+    courses_filename = "course_offered_2526S.xls"
     COURSES_FILEPATH = os.path.join(root_dir, "data", "input", courses_filename)
     OUTPUT_FILEPATH = os.path.join(root_dir, "data", "output")
     INPUT_FILEPATH = os.path.join(root_dir, "data", "input")
@@ -66,8 +67,6 @@ def update_config():
     conditions.append(include_condition) if include_condition else None
     conditions.append(must_condition) if must_condition else None
     filter_condition_str = " and ".join(conditions) if conditions else None
-
-    sort_reverse = False
 
     output = {
         "limit_results": limit_number_of_programs,
