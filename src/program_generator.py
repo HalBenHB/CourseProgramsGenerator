@@ -77,7 +77,7 @@ def calculate_program_stats(program, courses):
 
 
 def is_program_valid(program, requirements, courses, min_credit, max_credit):
-    total_credits = sum(int(courses[course_code]['credits']) for course_code in program['courses'])
+    total_credits = sum(int(courses[course_code].ects_credits) for course_code in program['courses'])
     if not (min_credit <= total_credits <= max_credit):
         return False
 
@@ -89,7 +89,7 @@ def is_program_valid(program, requirements, courses, min_credit, max_credit):
         if not check_satisfied(req['needed'], count):
             return False
 
-    program["total_credits"] = total_credits  # Correctly calculate total_credits here
+    program["total_credits"] = total_credits
     program = calculate_program_stats(program, courses)  # Calculate total_days and total_hours
     return True
 
@@ -102,7 +102,7 @@ def _generate_programs(requirement_index, current_program_courses, requirements,
             "schedule": []
         }
         for course_code in current_program_courses:
-            program["schedule"].extend(courses[course_code]["schedule"])
+            program["schedule"].extend(courses[course_code].schedule)
 
         if is_program_valid(program, requirements, courses, min_credit, max_credit):
             # print(f"Found valid program: {program}")
@@ -147,9 +147,9 @@ def _generate_programs(requirement_index, current_program_courses, requirements,
         current_program_schedule_for_check = {
             "schedule": []}
         for course_code in current_program_courses:
-            current_program_schedule_for_check["schedule"].extend(courses[course_code]['schedule'])
+            current_program_schedule_for_check["schedule"].extend(courses[course_code].schedule)
 
-        if not check_program_course_conflict(current_program_schedule_for_check, candidate_course['schedule']):
+        if not check_program_course_conflict(current_program_schedule_for_check, candidate_course.schedule):
             updated_program_courses = current_program_courses.copy()
             # updated_program_courses[candidate_course_code] = candidate_course
             updated_program_courses.append(candidate_course_code)

@@ -1,75 +1,112 @@
-import openpyxl
+import pandas as pd
 import json
 import os
 from src import config
 import pickle
 
-COURSES_FILEPATH = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.COURSES_FILENAME)
-REQUIREMENTS_FILEPATH = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.REQUIREMENTS_FILENAME)
-
+from src.course_models import CourseSection, Course
 
 def load_requirements_from_json():
+    requirements_filepath = config.REQUIREMENTS_FILEPATH
+
     """Loads requirements from a JSON file."""
     try:
-        with open(REQUIREMENTS_FILEPATH, 'r', encoding='utf-8') as f:
+        with open(requirements_filepath, 'r', encoding='utf-8') as f:
             requirements_data = json.load(f)
         return requirements_data
     except FileNotFoundError:
-        print(f"Error: Requirements file not found at '{REQUIREMENTS_FILEPATH}'.")
+        print(f"Error: Requirements file not found at '{requirements_filepath}'.")
         return None  # Or raise an exception if you prefer
     except json.JSONDecodeError:
-        print(f"Error: Invalid JSON format in '{REQUIREMENTS_FILEPATH}'.")
+        print(f"Error: Invalid JSON format in '{requirements_filepath}'.")
         return None  # Or raise an exception
 
 
-def course_parses():
+def course_parses(requirements=None):
+
+    courses_filepath = config.COURSES_FILEPATH
+
+
     # Load the Excel workbook
-    workbook = openpyxl.load_workbook(COURSES_FILEPATH)
+    df = pd.read_excel(courses_filepath)
 
-    # Choose the active sheet
-    sheet = workbook.active
-
-    # Initialize an empty dictionary to store courses
     courses = {}
+    candidate_courses = [candidate_course for candidate_courses_list in
+                         [requirement["candidates"] for requirement in requirements] for candidate_course in
+                         candidate_courses_list]
+    for index, row in df.iterrows():
+        subject_code = str(row['SUBJECT']).strip() if pd.notna(row['SUBJECT']) else None
+        course_no = str(row['COURSENO']).strip() if pd.notna(row['COURSENO']) else None
+        section_no = str(row['SECTIONNO']).strip() if pd.notna(row['SECTIONNO']) else None
+        full_course_code = f"{subject_code} {course_no}.{section_no}"
+        if requirements:
+            if full_course_code not in candidate_courses:
+                continue
+        course_id = f"{subject_code} {course_no}"
 
-    # Loop through all rows
-    for row in sheet.iter_rows(min_row=1,
-                               max_row=sheet.max_row,
-                               min_col=1,
-                               max_col=sheet.max_column):
-        for cell in row:
-            cell_value = cell.value
+        title = str(row['TITLE']).strip() if pd.notna(row['TITLE']) else None
+        faculty = str(row['FACULTY']).strip() if pd.notna(row['FACULTY']) else None
+        ects_credits = row['CREDITS'] if pd.notna(row['CREDITS']) else None
+        instructor_full_name = str(row['INSTRUCTORFULLNAME']).strip() if pd.notna(row['INSTRUCTORFULLNAME']) else None
+        corequisites = str(row['COREQUISITE']).strip() if pd.notna(row['COREQUISITE']) else None
+        prerequisites = str(row['PREREQUISITE']).strip() if pd.notna(row['PREREQUISITE']) else None
+        description = str(row['DESCRIPTION']).strip() if pd.notna(row['DESCRIPTION']) else None
+        schedule_for_print = str(row['SCHEDULEFORPRINT']).strip() if pd.notna(row['SCHEDULEFORPRINT']) else None
 
-            if cell_value:
-                course_code, course_name, schedule, ects_credits = cell_value.splitlines()
+        corequisite_list = [corequisite for corequisite in corequisites.split(" and ")] if corequisites else []
 
-                # Process the schedules into a list of dictionaries
-                schedule_list = []
-                for time_slots in schedule.strip("[]").split(";"):
-                    parts = time_slots.strip().split(";")
-                    for part in parts:
-                        day, interval = part.split(" ")
-                        schedule_list.append({
-                            "day"     : day,
-                            "interval": interval})
+        schedule_list = []
+        if schedule_for_print:
+            for time_slots in schedule_for_print.split("\n"):
+                day, interval = time_slots.split(" | ")
+                interval = interval.replace(":", ".")
+                start_time, end_time = interval.split(" - ")
+                schedule_list.append({
+                    "day": day,
+                    "interval": interval}
+                )
 
-                courses[course_code] = {
+        section = CourseSection(full_course_code=full_course_code,
+                                ects_credits=int(ects_credits) if pd.notna(ects_credits) else 0,
+                                schedule=schedule_list,
+                                section_no=section_no,
+                                course_name=title,
+                                course_id=course_id,
+                                subject_code=subject_code,
+                                course_number=course_no,
+                                faculty=faculty,
+                                instructor_full_name=instructor_full_name,
+                                corequisites=corequisite_list,
+                                prerequisites=prerequisites,
+                                description=description
+                                )
 
-                    "course_code": course_code,
-                    "course_name": course_name.strip("()"),
-                    "credits"    : ects_credits,
-                    "schedule"   : schedule_list,
-                }
+        # if course_id not in courses:
+        #     # Create a new Course object if it doesn't exist yet
+        #     course = Course(
+        #         course_id=course_id,
+        #         course_name=title,  # General course name
+        #         subject_code=subject_code,
+        #         course_number=course_no,
+        #         description=description,  # General description
+        #         prerequisites=prerequisites,  # General prerequisites
+        #         corequisites=corequisite_list  # General corequisites
+        #     )
+        #     courses[course_id] = course  # Add Course object to the courses dictionary
+
+        # courses[course_id].add_section(section)  # Add the CourseSection to the Course object
+        courses[full_course_code] = section
+
     return courses
 
 
-
 def load_possible_programs(file_path):
+
     """Loads possible programs from a pickle file."""
     try:
         with open(file_path, 'rb') as f:
             possible_programs = pickle.load(f)
-        print(f"Loaded programs from '{file_path}'.")  # Keep print for info
+        # print(f"Loaded programs from '{file_path}'.")  # Keep print for info
         return possible_programs
     except FileNotFoundError:
         print(f"File not found: '{file_path}'. No programs loaded.")
