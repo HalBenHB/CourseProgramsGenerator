@@ -25,22 +25,23 @@ save_output = True
 
 generation = None
 output = None
-DATA_FOLDER = None
-INPUT_FOLDER = None
-OUTPUT_FOLDER = None
-COURSES_FILENAME = None
-REQUIREMENTS_FILENAME = None
+REQUIREMENTS_FILEPATH = None
+COURSES_FILEPATH = None
+OUTPUT_FILEPATH = None
+INPUT_FILEPATH = None
 
 
 # config
 def update_config():
-    global generation, output, DATA_FOLDER, INPUT_FOLDER, OUTPUT_FOLDER, COURSES_FILENAME, REQUIREMENTS_FILENAME
+    global generation, output, REQUIREMENTS_FILEPATH, COURSES_FILEPATH, OUTPUT_FILEPATH, INPUT_FILEPATH
 
-    DATA_FOLDER = "data"
-    INPUT_FOLDER = "input"
-    OUTPUT_FOLDER = "output"
-    COURSES_FILENAME = "course_offered_2425F.xls"
-    REQUIREMENTS_FILENAME = requirements_parameter
+    root_dir = os.path.dirname(os.path.dirname(__file__))
+    requirements_filename = requirements_parameter
+    REQUIREMENTS_FILEPATH = os.path.join(root_dir,"data","input",requirements_filename)
+    courses_filename = "course_offered_2425F.xls"
+    COURSES_FILEPATH = os.path.join(root_dir, "data", "input", courses_filename)
+    OUTPUT_FILEPATH = os.path.join(root_dir, "data", "output")
+    INPUT_FILEPATH = os.path.join(root_dir, "data", "input")
 
     generation = {
         "min_credit": min_credit,
@@ -82,13 +83,13 @@ def update_config():
     }
 
     if output["save_file"]:
-        output["save_file"] = os.path.join(DATA_FOLDER, OUTPUT_FOLDER,
+        output["save_file"] = os.path.join(OUTPUT_FILEPATH,
                                            datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt")
     else:
         output["save_file"] = False
 
-    generation["programs_file_path"] = os.path.join(DATA_FOLDER, INPUT_FOLDER,
-                                                    f"possible_programs_{REQUIREMENTS_FILENAME.replace('.json', '')}-min_{generation['min_credit']}-max_{generation['max_credit']}.pkl")
+    generation["programs_file_path"] = os.path.join(INPUT_FILEPATH,
+                                                    f"possible_programs_{requirements_filename.replace('.json', '')}-min_{generation['min_credit']}-max_{generation['max_credit']}.pkl")
 
 
 update_config()

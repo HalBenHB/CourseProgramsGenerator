@@ -7,7 +7,7 @@ import pickle
 from src.course_models import CourseSection, Course
 
 def load_requirements_from_json():
-    requirements_filepath = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.REQUIREMENTS_FILENAME)
+    requirements_filepath = config.REQUIREMENTS_FILEPATH
 
     """Loads requirements from a JSON file."""
     try:
@@ -23,7 +23,10 @@ def load_requirements_from_json():
 
 
 def course_parses(requirements=None):
-    courses_filepath = os.path.join(config.DATA_FOLDER, config.INPUT_FOLDER, config.COURSES_FILENAME)
+
+    courses_filepath = config.COURSES_FILEPATH
+
+
     # Load the Excel workbook
     df = pd.read_excel(courses_filepath)
 
