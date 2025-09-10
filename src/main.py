@@ -29,7 +29,7 @@ config.save_output = True
 # main.py
 config.update_config()
 requirements = load_requirements_from_json()
-courses = course_parses(requirements)
+courses = course_parses()
 
 if __name__ == '__main__':
     programs_file = config.generation["programs_file_path"]

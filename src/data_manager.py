@@ -31,7 +31,9 @@ def course_parses(requirements=None):
     df = pd.read_excel(courses_filepath)
 
     courses = {}
-    candidate_courses = [candidate_course for candidate_courses_list in
+
+    if requirements:
+        candidate_courses = [candidate_course for candidate_courses_list in
                          [requirement["candidates"] for requirement in requirements] for candidate_course in
                          candidate_courses_list]
     for index, row in df.iterrows():
