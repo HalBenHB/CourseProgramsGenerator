@@ -65,7 +65,7 @@ def calculate_program_stats(program, courses):
     days = set()
     total_minutes = 0
     for course_code in program['courses']:
-        for schedule_entry in courses[course_code]['schedule']:
+        for schedule_entry in courses[course_code].schedule:
             days.add(schedule_entry['day'])
             start_minutes = time_to_minutes(schedule_entry['interval'].split('-')[0])
             end_minutes = time_to_minutes(schedule_entry['interval'].split('-')[1])
