@@ -26,7 +26,14 @@ class Config:
         Accepts keyword arguments to override defaults.
         """
         # --- File and Path Parameters ---
-        self.paths = {"root": None, "input_dir": None, "output_dir": None}
+        self.paths = {
+            "root": None,
+            "input_dir": None,
+            "output_dir": None,
+            "reqs_dir": None,
+            "cache_dir": None,
+            "pre_reqs_dir": None
+        }
 
         self.input = {
             "courses": {
@@ -93,7 +100,7 @@ class Config:
             condition_str = self.day_conditions[0].strip()
             # Find the operator by checking for 2-char operators first
             op_str = next((op for op in ['<=', '>=', '==', '!='] if op in condition_str), None)
-            if not op_str: # If not a 2-char op, check for 1-char op
+            if not op_str:  # If not a 2-char op, check for 1-char op
                 op_str = next((op for op in ['<', '>', '='] if op in condition_str), None)
 
             if op_str and op_str in SUPPORTED_OPERATORS:
@@ -144,7 +151,6 @@ class Config:
 
         return (final_filter, " and ".join(descriptions))
 
-
     def update(self):
         """
         Builds the derived configuration values (like full paths and lambda functions)
@@ -156,9 +162,23 @@ class Config:
         self.paths["input_dir"] = os.path.join(self.paths["root"], "data", "input")
         self.paths["output_dir"] = os.path.join(self.paths["root"], "data", "output")
 
+        # --- NEW: Build full paths for new subdirectories ---
+        self.paths["reqs_dir"] = os.path.join(self.paths["input_dir"], "reqs")
+        self.paths["cache_dir"] = os.path.join(self.paths["input_dir"], "caches")
+        self.paths["pre_reqs_dir"] = os.path.join(self.paths["input_dir"], "pre_reqs")
+
+        # --- NEW (Robustness): Ensure all directories exist ---
+        for path in [self.paths["output_dir"], self.paths["reqs_dir"], self.paths["cache_dir"],
+                     self.paths["pre_reqs_dir"]]:
+            os.makedirs(path, exist_ok=True)
+
         # --- 2. Build full input file paths ---
+        # Main course files are still in the root of input/
         self.input["courses"]["filepath"] = os.path.join(self.paths["input_dir"], self.input["courses"]["basename"])
-        self.input["requirements"]["filepath"] = os.path.join(self.paths["input_dir"], self.input["requirements"]["basename"])
+
+        # --- CHANGED: Requirement files are now in the 'reqs' subdirectory ---
+        self.input["requirements"]["filepath"] = os.path.join(self.paths["reqs_dir"],
+                                                              self.input["requirements"]["basename"])
 
         # --- 3. Build full output file paths ---
         if self.output["report"]["enabled"]:
@@ -169,7 +189,6 @@ class Config:
 
         # --- 4. Build filter and sort functions ---
         self.filter_function, self.filter_description = self._build_filter_function()
-
         sort_key = self.display_params.get("sort_key")
         self.sort_function = itemgetter(sort_key) if sort_key else None
 
