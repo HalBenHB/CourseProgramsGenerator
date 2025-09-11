@@ -1,51 +1,44 @@
 import pandas as pd
 import json
 import os
-from src import config
 import pickle
+from src.course_models import CourseSection
 
-from src.course_models import CourseSection, Course
-
-def load_requirements_from_json():
-    requirements_filepath = config.REQUIREMENTS_FILEPATH
-
-    """Loads requirements from a JSON file."""
+# --- MODIFIED --- Accepts a config object
+def load_requirements_from_json(config_obj):
+    """Loads requirements from a JSON file specified in the config object."""
     try:
-        with open(requirements_filepath, 'r', encoding='utf-8') as f:
-            requirements_data = json.load(f)
-        return requirements_data
+        with open(config_obj.REQUIREMENTS_FILEPATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
     except FileNotFoundError:
-        print(f"Error: Requirements file not found at '{requirements_filepath}'.")
-        return None  # Or raise an exception if you prefer
+        print(f"Error: Requirements file not found at '{config_obj.REQUIREMENTS_FILEPATH}'.")
+        return None
     except json.JSONDecodeError:
-        print(f"Error: Invalid JSON format in '{requirements_filepath}'.")
-        return None  # Or raise an exception
+        print(f"Error: Invalid JSON format in '{config_obj.REQUIREMENTS_FILEPATH}'.")
+        return None
 
-
-def course_parses(requirements=None):
-
-    courses_filepath = config.COURSES_FILEPATH
-
-
-    # Load the Excel workbook
-    df = pd.read_excel(courses_filepath)
-
+# --- MODIFIED --- Accepts a config object
+def course_parses(config_obj, requirements=None):
+    df = pd.read_excel(config_obj.COURSES_FILEPATH)
     courses = {}
 
+    # --- This optimization logic now works correctly ---
+    candidate_courses = set()
     if requirements:
-        candidate_courses = [candidate_course for candidate_courses_list in
-                         [requirement["candidates"] for requirement in requirements] for candidate_course in
-                         candidate_courses_list]
-    for index, row in df.iterrows():
-        subject_code = str(row['SUBJECT']).strip() if pd.notna(row['SUBJECT']) else None
-        course_no = str(row['COURSENO']).strip() if pd.notna(row['COURSENO']) else None
-        section_no = str(row['SECTIONNO']).strip() if pd.notna(row['SECTIONNO']) else None
-        full_course_code = f"{subject_code} {course_no}.{section_no}"
-        if requirements:
-            if full_course_code not in candidate_courses:
-                continue
-        course_id = f"{subject_code} {course_no}"
+        for req in requirements:
+            if 'candidates' in req:
+                candidate_courses.update(req['candidates'])
 
+    for _, row in df.iterrows():
+        subject_code = str(row['SUBJECT']).strip() if pd.notna(row['SUBJECT']) else ''
+        course_no = str(row['COURSENO']).strip() if pd.notna(row['COURSENO']) else ''
+        section_no = str(row['SECTIONNO']).strip() if pd.notna(row['SECTIONNO']) else ''
+        full_course_code = f"{subject_code} {course_no}.{section_no}"
+
+        if requirements and full_course_code not in candidate_courses:
+            continue
+
+        course_id = f"{subject_code} {course_no}"
         title = str(row['TITLE']).strip() if pd.notna(row['TITLE']) else None
         faculty = str(row['FACULTY']).strip() if pd.notna(row['FACULTY']) else None
         ects_credits = row['CREDITS'] if pd.notna(row['CREDITS']) else None

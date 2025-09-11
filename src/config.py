@@ -1,94 +1,102 @@
+# src/config.py
+
 import os
 from datetime import datetime
 
-# Defaults
-# Set requirements
-requirements_parameter = "requirements_olcay.json"
 
-# Set generation parameters here
-min_credit = 30
-max_credit = 42
-load_programs_if_saved = True
-save_programs_after_generation = True
+class Config:
+    """An object to hold all configuration settings for a generation run."""
 
-# Set output filter and sort functions here
-limit_number_of_programs = 5
-day_conditions = None  # ["<5"]
-exclude_courses = None  # ["CS 447.A"]
-include_courses = None  # ["BUS 302.A"]
-must_courses = None  # ["CS 333.A"]
-sort_condition_str = "program['total_days']"
-sort_reverse = False
+    def __init__(self, **kwargs):
+        """
+        Initializes the Config object with base parameters.
+        Accepts keyword arguments to override defaults.
+        """
+        # Base Parameters (can be set by the user/GUI)
+        self.courses_parameter = kwargs.get('courses_parameter', "course_offered_2526S.xls")
+        self.requirements_parameter = kwargs.get('requirements_parameter', "requirements_halil.json")
+        self.min_credit = kwargs.get('min_credit', 30)
+        self.max_credit = kwargs.get('max_credit', 42)
+        self.limit_number_of_programs = kwargs.get('limit_number_of_programs', 5)
+        self.day_conditions = kwargs.get('day_conditions', None)
+        self.exclude_courses = kwargs.get('exclude_courses', None)
+        self.include_courses = kwargs.get('include_courses', None)
+        self.must_courses = kwargs.get('must_courses', None)
+        self.sort_condition_str = kwargs.get('sort_condition_str', "program['total_days']")
+        self.sort_reverse = kwargs.get('sort_reverse', False)
 
-# Set output parameters
-print_output = False
-save_output = True
+        # Caching Parameters
+        self.load_programs_if_saved = kwargs.get('load_programs_if_saved', True)
+        self.save_programs_after_generation = kwargs.get('save_programs_after_generation', True)
 
-generation = None
-output = None
-REQUIREMENTS_FILEPATH = None
-COURSES_FILEPATH = None
-OUTPUT_FILEPATH = None
-INPUT_FILEPATH = None
+        # Output Parameters
+        self.save_output = kwargs.get('save_output', True)
+
+        # --- Derived Parameters (will be built by the update() method) ---
+        self.generation = {}
+        self.output = {}
+        self.REQUIREMENTS_FILEPATH = None
+        self.COURSES_FILEPATH = None
+        self.OUTPUT_FILEPATH = None
+        self.INPUT_FILEPATH = None
+
+        # The update() method must be called to build the derived parameters
+        # before the config object is used by the backend.
+
+    def update(self):
+        """
+        Builds the derived configuration values (like full paths and lambda functions)
+        based on the base parameters. This should be called after all user settings
+        have been applied to the object.
+        """
+        root_dir = os.path.dirname(os.path.dirname(__file__))
+        self.INPUT_FILEPATH = os.path.join(root_dir, "data", "input")
+        self.OUTPUT_FILEPATH = os.path.join(root_dir, "data", "output")
+
+        # Build full paths from parameters
+        self.REQUIREMENTS_FILEPATH = os.path.join(self.INPUT_FILEPATH, self.requirements_parameter)
+        self.COURSES_FILEPATH = os.path.join(self.INPUT_FILEPATH, self.courses_parameter)
+
+        self.generation = {
+            "min_credit": self.min_credit,
+            "max_credit": self.max_credit,
+            "load_programs_from_file": self.load_programs_if_saved,
+            "save_programs_to_file": self.save_programs_after_generation,
+            # This will be set by the GUI's hash-based generator
+            "programs_file_path": None
+        }
+
+        # Build filter and sort functions
+        day_cond = f'program["total_days"] {self.day_conditions[0]}' if self.day_conditions else None
+        exclude_cond = " and ".join(
+            [f'"{c}" not in program["courses"]' for c in self.exclude_courses]) if self.exclude_courses else None
+        include_cond = " or ".join(
+            [f'"{c}" in program["courses"]' for c in self.include_courses]) if self.include_courses else None
+        must_cond = " and ".join(
+            [f'"{c}" in program["courses"]' for c in self.must_courses]) if self.must_courses else None
+
+        conditions = [c for c in [day_cond, exclude_cond, include_cond, must_cond] if c]
+        filter_condition_str = " and ".join(f"({c})" for c in conditions) if conditions else "True"
+
+        self.output = {
+            "limit_results": self.limit_number_of_programs,
+            "filter_function": eval(f"lambda program: {filter_condition_str}"),
+            "filter_description": filter_condition_str if filter_condition_str != "True" else "None",
+            "sort_function": eval(f"lambda program: {self.sort_condition_str}") if self.sort_condition_str else None,
+            "sort_description": self.sort_condition_str,
+            "sort_reverse": self.sort_reverse,
+            "return_output": True,
+            "save_file": self.save_output,
+            "include_schedule": True
+        }
+
+        if self.output["save_file"]:
+            self.output["save_file"] = os.path.join(self.OUTPUT_FILEPATH,
+                                                    datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt")
+        else:
+            self.output["save_file"] = False
 
 
-# config
-def update_config():
-    global generation, output, REQUIREMENTS_FILEPATH, COURSES_FILEPATH, OUTPUT_FILEPATH, INPUT_FILEPATH
-
-    root_dir = os.path.dirname(os.path.dirname(__file__))
-    requirements_filename = requirements_parameter
-    REQUIREMENTS_FILEPATH = os.path.join(root_dir,"data","input",requirements_filename)
-    courses_filename = "course_offered_2526S.xls"
-    COURSES_FILEPATH = os.path.join(root_dir, "data", "input", courses_filename)
-    OUTPUT_FILEPATH = os.path.join(root_dir, "data", "output")
-    INPUT_FILEPATH = os.path.join(root_dir, "data", "input")
-
-    generation = {
-        "min_credit": min_credit,
-        "max_credit": max_credit,
-        "load_programs_from_file": load_programs_if_saved,  # Default to generating, change to True to load
-        "save_programs_to_file": save_programs_after_generation,
-        # Default to saving, keep True to save after generation
-    }
-
-    day_condition = "(" + " and ".join(
-        f'program["total_days"] {day_cond}' for day_cond in day_conditions) + ")" if day_conditions else False
-    exclude_condition = "(" + " and ".join(
-        [f'"{course}" not in program["courses"]' for course in exclude_courses]) + ")" if exclude_courses else False
-    include_condition = "(" + " or ".join(
-        [f'"{course}" in program["courses"]' for course in include_courses]) + ")" if include_courses else False
-    must_condition = "(" + " and ".join(
-        [f'"{course}" in program["courses"]' for course in must_courses]) + ")" if must_courses else False
-
-    conditions = []
-    conditions.append(day_condition) if day_condition else None
-    conditions.append(exclude_condition) if exclude_condition else None
-    conditions.append(include_condition) if include_condition else None
-    conditions.append(must_condition) if must_condition else None
-    filter_condition_str = " and ".join(conditions) if conditions else None
-
-    output = {
-        "limit_results": limit_number_of_programs,
-        "filter_function": eval(f"lambda program: {filter_condition_str}") if filter_condition_str else None,
-        "filter_description": filter_condition_str,
-        "sort_function": eval(f"lambda program: {sort_condition_str}") if sort_condition_str else None,
-        "sort_description": sort_condition_str,
-        "sort_reverse": sort_reverse,
-        "print_output": print_output,
-        "return_output": True,
-        "save_file": save_output,
-        "include_schedule": True
-    }
-
-    if output["save_file"]:
-        output["save_file"] = os.path.join(OUTPUT_FILEPATH,
-                                           datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt")
-    else:
-        output["save_file"] = False
-
-    generation["programs_file_path"] = os.path.join(INPUT_FILEPATH,
-                                                    f"possible_programs_{requirements_filename.replace('.json', '')}-min_{generation['min_credit']}-max_{generation['max_credit']}.pkl")
-
-
-update_config()
+# For any script that needs a simple, default configuration without the GUI
+default_config = Config()
+default_config.update()

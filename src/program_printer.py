@@ -69,7 +69,10 @@ def format_program_schedule(program, courses):
 
 
 def format_calendar_grid(calendar_grid, day_order, time_slots_display):
-    course_code_len = max(len(course_code) for day in day_order for course_code in calendar_grid[day])
+    try:
+        course_code_len = max(len(course_code) for day in day_order for course_code in calendar_grid[day]) if any(any(d) for d in calendar_grid.values()) else 10
+    except ValueError:
+        course_code_len = 10 # Default if grid is empty
 
     grid_output = ""
     separator_length = ((course_code_len + 2) * 5) + 13
@@ -95,41 +98,68 @@ def format_calendar_grid(calendar_grid, day_order, time_slots_display):
 def list_programs(programs, courses, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None,
                   save_txt=None, include_schedule=None, limit_results=None, filter_description=None,
                   sort_description=None, sort_reverse=False):
-    output_text = ""  # Initialize an empty string to store the output
+
+    # --- CHANGE 1: Initialize an empty LIST, not a string ---
+    output_parts = []
 
     summarized_programs = programs
     if filter_function:
         summarized_programs = list(filter(filter_function, summarized_programs))
-        output_text += "Filter functions: " + filter_description + "\n"
-        print(f"Filtered. Remained {len(summarized_programs)} programs")
+        if print_wanted or save_txt:
+            output_parts.append("Filter functions: " + filter_description + "\n")
+            print(f"Filtered. Remained {len(summarized_programs)} programs")
 
     if sort_function:
-        summarized_programs = list(sorted(summarized_programs, key=sort_function, reverse=sort_reverse))
-        output_text += "Sorted by: " + sort_description + "\n"
-        print(f"Sorted by: {sort_description}")
+        summarized_programs = sorted(summarized_programs, key=sort_function, reverse=sort_reverse)
+        if print_wanted or save_txt:
+            output_parts.append("Sorted by: " + sort_description + (" (Descending)" if sort_reverse else "") + "\n")
+            print(f"Sorted by: {sort_description}" + (" (Descending)" if sort_reverse else ""))
 
-    if print_wanted or save_txt:  # Include schedule in the condition
-        number_of_total_programs = str(len(summarized_programs))
-        output_text += "Total programs: " + number_of_total_programs + "\n"
-        for i, program in enumerate(summarized_programs):
-            program_index = i + 1
-            if limit_results and limit_results < program_index:
-                break
-            program["program_index"] = program_index  # Add program index for output
+    if print_wanted or save_txt:
+        programs_to_print = summarized_programs[:limit_results] if limit_results else summarized_programs
+        total_to_process = len(programs_to_print)
+
+        output_parts.append("Total programs found: " + str(len(summarized_programs)) + "\n")
+        if limit_results:
+            output_parts.append(f"Displaying top {min(limit_results, total_to_process)}:\n")
+
+        for i, program in enumerate(programs_to_print):
+            program["program_index"] = i + 1
             program_output = format_program_info(program, courses, include_schedule)
-            output_text += program_output  # Append to the output string
-            print(f'\rOutput generated: {program_index}/{number_of_total_programs}', end='', flush=True)
 
-        if print_wanted:  # Print to console if print_wanted is True
-            print(program_output, end="")  # print without adding extra newline as program_output already has
+            # --- CHANGE 2: Append to the list (very fast) ---
+            output_parts.append(program_output)
 
-        if save_txt:  # Save to text file if save_txt is provided
+            # --- THE UI OPTIMIZATION ---
+            # Only print a progress update periodically, not on every single iteration.
+            # The modulo operator (%) is perfect for this.
+            if (i + 1) % 100 == 0 or (i + 1) == total_to_process:
+                print(f'\rOutput generated: {i + 1}/{total_to_process}', end='', flush=True)
+
+        print() # Final newline after progress bar
+
+        # --- CHANGE 3: Join the list into a single string ONCE at the end ---
+        final_output_text = "".join(output_parts)
+
+        if print_wanted:
+            # Note: printing a massive string to the console can itself be slow.
+            # This is a limitation of the terminal, not the Python script.
+            print(final_output_text)
+
+        if save_txt:
             try:
-                with open(save_txt, 'w', encoding='utf-8') as f:  # Added encoding for broader character support
-                    f.write(output_text)
-                print(f"\nPrograms saved to '{save_txt}'")  # Inform user that file is saved
+                with open(save_txt, 'w', encoding='utf-8') as f:
+                    f.write(final_output_text)
+                print(f"\nPrograms saved to '{save_txt}'")
             except Exception as e:
                 print(f"Error saving to '{save_txt}': {e}")  # Handle potential file writing errors
 
     if return_wanted:
-        return summarized_programs, output_text
+        if not output_parts:
+             final_output_text = ""
+        elif 'final_output_text' not in locals():
+             final_output_text = "".join(output_parts)
+
+        return summarized_programs, final_output_text
+
+    return None, None
