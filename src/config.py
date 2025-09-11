@@ -97,7 +97,7 @@ class Config:
         # --- 1. Day Condition Filter ---
         day_conds = self.display_params['filters']['day_conditions']
         if day_conds and day_conds[0]:
-            condition_str = self.day_conditions[0].strip()
+            condition_str = day_conds[0].strip()
             # Find the operator by checking for 2-char operators first
             op_str = next((op for op in ['<=', '>=', '==', '!='] if op in condition_str), None)
             if not op_str:  # If not a 2-char op, check for 1-char op
@@ -127,7 +127,7 @@ class Config:
             include_set = set(include_courses)
             # A program is valid if its course set is NOT disjoint (i.e., has an intersection)
             filters.append(lambda p, inc_s=include_set: not inc_s.isdisjoint(p['courses']))
-            descriptions.append(f"Including at least one of: {', '.join(self.include_courses)}")
+            descriptions.append(f"Including at least one of: {', '.join(include_courses)}")
 
         # --- 4. Must Have Courses Filter (All of them) ---
         must_courses = self.display_params['filters']['must_courses']
@@ -135,7 +135,7 @@ class Config:
             must_set = set(must_courses)
             # A program is valid if the 'must_set' is a subset of the program's course set
             filters.append(lambda p, ms=must_set: ms.issubset(p['courses']))
-            descriptions.append(f"Must include all: {', '.join(self.must_courses)}")
+            descriptions.append(f"Must include all: {', '.join(must_courses)}")
 
         # --- Combine all active filters into a single function ---
         if not filters:
