@@ -18,25 +18,27 @@ def run_program_generation(config_obj):
 
     """
     # Load requirements and courses based on config
-    requirements = load_requirements_from_json(config_obj) # Assumes config.REQUIREMENTS_FILEPATH is set
+    requirements_path = config_obj.input["requirements"]["filepath"]
+    requirements = load_requirements_from_json(requirements_path)
     if not requirements:
         return [], "Error: Could not load requirements file.", None
 
-    # We now pass the requirements to course_parses to potentially speed it up
-    courses = course_parses(config_obj, requirements=requirements)
+    # --- CHANGED --- Pass the specific filepath now
+    courses_path = config_obj.input["courses"]["filepath"]
+    courses = course_parses(courses_path, requirements=requirements)
     if not courses:
         return [], "Error: Could not parse courses file.", None
 
-    # Get values directly from the config object's dictionaries
-    programs_file = config_obj.generation["programs_file_path"]
-    min_credit = config_obj.generation["min_credit"]
-    max_credit = config_obj.generation["max_credit"]
+    # --- CHANGED --- Get values from the new dictionaries
+    programs_file = config_obj.input["cache"]["filepath"]
+    min_credit = config_obj.generation_params["min_credit"]
+    max_credit = config_obj.generation_params["max_credit"]
     output_str = ""
     possible_programs = []
 
     # --- MODIFIED --- New, robust caching logic
     cache_hit = False
-    if config_obj.generation["load_programs_from_file"] and os.path.exists(programs_file):
+    if config_obj.input["cache"]["enabled"] and programs_file and os.path.exists(programs_file):
         output_str += f"Potential cache file found: '{os.path.basename(programs_file)}'. Validating...\n"
         cached_data = load_possible_programs(programs_file)
 
@@ -56,27 +58,28 @@ def run_program_generation(config_obj):
         output_str += "Generating possible programs... (This may take a while)\n"
         possible_programs = generate_programs(requirements, courses, min_credit, max_credit)
         output_str += f"Found {len(possible_programs)} possible programs.\n"
-        if config_obj.generation["save_programs_to_file"]:
+        if config_obj.output["cache"]["enabled"]:
             output_str += f"Saving programs to cache file '{os.path.basename(programs_file)}'...\n"
             save_possible_programs(possible_programs, programs_file, requirements, min_credit, max_credit)
 
-    # Filter, sort, and format the output
-    # IMPORTANT: We set print_wanted=False and return_wanted=True to capture the output string
+    # --- CHANGED --- Pass the new structured parameters
     summarized_programs, formatted_output = list_programs(
         programs=possible_programs,
         courses=courses,
-                                     filter_function=config_obj.output["filter_function"],
-                                     sort_function=config_obj.output["sort_function"],
-                                     print_wanted=False, # We will display this in the GUI, not print to console
-                                     return_wanted=True, # We need the programs and the text output
-                                     save_txt=config_obj.output["save_file"],
-                                     include_schedule=config_obj.output["include_schedule"],
-                                     limit_results=config_obj.output["limit_results"],
-                                     filter_description=config_obj.output["filter_description"],
-                                     sort_description=config_obj.output["sort_description"],
-                                     sort_reverse=config_obj.output["sort_reverse"])
+        filter_function=config_obj.filter_function,
+        sort_function=config_obj.sort_function,
+        print_wanted=False,
+        return_wanted=True,
+        save_txt=config_obj.output["report"]["filepath"],
+        include_schedule=config_obj.display_params["include_schedule"],
+        limit_results=config_obj.display_params["limit_results"],
+        filter_description=config_obj.filter_description,
+        sort_description=config_obj.display_params["sort_key"],
+        sort_reverse=config_obj.display_params["sort_reverse"]
+    )
 
-    auto_save_path = config_obj.output.get("save_file", None)
+    auto_save_path = config_obj.output["report"]["filepath"]
+
     if auto_save_path:
         output_str += f"\nFormatted output also saved to file: {auto_save_path}\n"
 

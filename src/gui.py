@@ -79,12 +79,12 @@ class Screen1(ttk.Frame):
         ttk.Label(self, text="Select the offered courses file (e.g., course_offered_2425F.xls).").pack(pady=10)
         file_frame = ttk.Frame(self)
         file_frame.pack(pady=10, fill='x', padx=20)
-        self.courses_filepath_var = tk.StringVar(value=self.controller.config.COURSES_FILEPATH)
+        self.courses_filepath_var = tk.StringVar(value=self.controller.config.input["courses"]["filepath"])
         ttk.Entry(file_frame, textvariable=self.courses_filepath_var, width=60).pack(side="left", fill="x", expand=True)
         ttk.Button(file_frame, text="Browse...", command=self.browse_file).pack(side="left", padx=5)
         ttk.Button(self, text="Load Courses and Continue", command=self.load_courses).pack(pady=20)
     def browse_file(self):
-        initial_dir = os.path.dirname(self.controller.config.COURSES_FILEPATH or ".")
+        initial_dir = os.path.dirname(self.controller.config.input["courses"]["filepath"] or ".")
         filename = filedialog.askopenfilename(initialdir=initial_dir, title="Select Courses File", filetypes=(("Excel Files", "*.xls*"), ("All files", "*.*")))
         if filename: self.courses_filepath_var.set(filename)
     def load_courses(self):
@@ -94,9 +94,10 @@ class Screen1(ttk.Frame):
             return
         try:
             config_obj = self.controller.config
-            config_obj.courses_parameter = os.path.basename(filepath)
-            config_obj.update()
-            all_courses = data_manager.course_parses(config_obj)
+            config_obj.input["courses"]["basename"] = os.path.basename(filepath)  # Set the basename
+            config_obj.update()  # update() will build the full path
+            # Pass the full path to course_parses
+            all_courses = data_manager.course_parses(config_obj.input["courses"]["filepath"])
             self.controller.all_courses_list = all_courses
             self.controller.get_frame(Screen2).update_course_list(list(all_courses.keys()))
             self.controller.show_frame(Screen2)
@@ -251,7 +252,7 @@ class Screen2(ttk.Frame):
             self._create_req_from_file(filepath, req_name, needed)
         else:
             req_config = self.PREDEFINED_REQS[selection]
-            filepath = os.path.join(self.controller.config.INPUT_FILEPATH, req_config['file'])
+            filepath = os.path.join(self.controller.config.paths["input_dir"], req_config['file'])
             req_name = selection
             needed = req_config['needed']
             self._create_req_from_file(filepath, req_name, needed)
@@ -409,7 +410,7 @@ class Screen2(ttk.Frame):
                 messagebox.showinfo("Success", f"Loaded {len(self.controller.requirements)} requirements.")
             except Exception as e: messagebox.showerror("Error", f"Failed to load or parse JSON file:\n{e}")
     def load_last_session(self):
-        temp_req_path = os.path.join(self.controller.config.INPUT_FILEPATH, "requirements_gui_temp.json")
+        temp_req_path = os.path.join(self.controller.config.paths["input_dir"], "requirements_gui_temp.json")
         if not os.path.exists(temp_req_path):
             messagebox.showinfo("Info", "No last session file found to load.")
             return
@@ -419,11 +420,12 @@ class Screen2(ttk.Frame):
             messagebox.showerror("Error", "You must create or load at least one requirement.")
             return
         # Use the requirements from the controller's memory, which is the single source of truth
-        self.controller.config.requirements = self.controller.requirements
-        temp_req_path = os.path.join(self.controller.config.INPUT_FILEPATH, "requirements_gui_temp.json")
+        self.controller.config.requirements = self.controller.requirements  # Keep this for now, it's the live edited data
+        temp_req_path = os.path.join(self.controller.config.paths["input_dir"], "requirements_gui_temp.json")
         with open(temp_req_path, 'w') as f: json.dump(self.controller.requirements, f)
-        self.controller.config.requirements_parameter = os.path.basename(temp_req_path)
+        self.controller.config.input["requirements"]["basename"] = os.path.basename(temp_req_path)
         self.controller.show_frame(Screen3)
+
 
 class Screen3(ttk.Frame):
     def __init__(self, parent, controller):
@@ -447,10 +449,11 @@ class Screen3(ttk.Frame):
         gen_frame = ttk.LabelFrame(top_frame, text="Generation Parameters")
         gen_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         self.gen_vars = {
-            "min_credit": tk.StringVar(value=self.controller.config.min_credit),
-            "max_credit": tk.StringVar(value=self.controller.config.max_credit),
-            "load_if_possible": tk.BooleanVar(value=True)
+            "min_credit": tk.StringVar(value=self.controller.config.generation_params["min_credit"]),
+            "max_credit": tk.StringVar(value=self.controller.config.generation_params["max_credit"]),
+            "load_if_possible": tk.BooleanVar(value=self.controller.config.input["cache"]["enabled"])
         }
+
         ttk.Label(gen_frame, text="Min/Max Credits:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
         ttk.Entry(gen_frame, textvariable=self.gen_vars["min_credit"], width=5).grid(row=0, column=1, sticky="w", padx=5, pady=2)
         ttk.Entry(gen_frame, textvariable=self.gen_vars["max_credit"], width=5).grid(row=0, column=2, sticky="w", pady=2)
@@ -460,7 +463,11 @@ class Screen3(ttk.Frame):
         Tooltip(cache_check, help_texts["cache"])
         out_frame = ttk.LabelFrame(top_frame, text="Output Parameters")
         out_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        self.out_vars = {"limit": tk.StringVar(value=self.controller.config.limit_number_of_programs), "sort_str": tk.StringVar(value=self.controller.config.sort_key), "sort_reverse": tk.BooleanVar(value=False)}
+        self.out_vars = {
+            "limit": tk.StringVar(value=self.controller.config.display_params["limit_results"]),
+            "sort_str": tk.StringVar(value=self.controller.config.display_params["sort_key"]),
+            "sort_reverse": tk.BooleanVar(value=self.controller.config.display_params["sort_reverse"])
+        }
         ttk.Label(out_frame, text="Limit Programs:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
         ttk.Entry(out_frame, textvariable=self.out_vars["limit"], width=10).grid(row=0, column=1, sticky="w", padx=5, pady=2)
         Tooltip(ttk.Label(out_frame, text="(?)", cursor="question_arrow"), help_texts["limit"]).widget.grid(row=0, column=2, sticky="w", padx=5)
@@ -494,13 +501,15 @@ class Screen3(ttk.Frame):
         sys.stdout = StdoutRedirector(self.output_text)
     def _generate_cache_filename(self):
         config_obj = self.controller.config
-        courses_basename = os.path.splitext(config_obj.courses_parameter)[0]
+        courses_basename = os.path.splitext(config_obj.input["courses"]["basename"])[0]
         req_string = json.dumps(self.controller.requirements, sort_keys=True, separators=(',', ':'))
         req_hash = hashlib.sha256(req_string.encode('utf-8')).hexdigest()[:16]
         safe_courses_name = "".join(c for c in courses_basename if c.isalnum() or c in (' ', '_')).rstrip()
-        cache_filename = f"cache_{safe_courses_name}_reqs_{req_hash}_cr_{config_obj.min_credit}-{config_obj.max_credit}.pkl"
-        if not config_obj.INPUT_FILEPATH: config_obj.update()
-        return os.path.join(config_obj.INPUT_FILEPATH, cache_filename)
+        min_cred = config_obj.generation_params["min_credit"]
+        max_cred = config_obj.generation_params["max_credit"]
+        cache_filename = f"cache_{safe_courses_name}_reqs_{req_hash}_cr_{min_cred}-{max_cred}.pkl"
+        return os.path.join(config_obj.paths["input_dir"], cache_filename)
+
     def save_output(self):
         if not self.last_auto_save_path or not os.path.exists(self.last_auto_save_path):
             messagebox.showwarning("Warning", "No auto-saved output file found. Please generate programs first.")
@@ -543,24 +552,27 @@ class Screen3(ttk.Frame):
     def run_generation_worker(self):
         try:
             config_obj = self.controller.config
+            # ... set min/max credit
             min_credit_str = self.gen_vars["min_credit"].get().strip()
             max_credit_str = self.gen_vars["max_credit"].get().strip()
             limit_str = self.out_vars["limit"].get().strip()
-            config_obj.min_credit = int(min_credit_str) if min_credit_str else 30
-            config_obj.max_credit = int(max_credit_str) if max_credit_str else 42
-            config_obj.limit_number_of_programs = int(limit_str) if limit_str else None
-            config_obj.sort_reverse = self.out_vars["sort_reverse"].get()
+            config_obj.generation_params["min_credit"] = int(min_credit_str) if min_credit_str else 30
+            config_obj.generation_params["max_credit"] = int(max_credit_str) if max_credit_str else 42
+            # ... set display params
+            config_obj.display_params["limit_results"] = int(limit_str) if limit_str else None
+            config_obj.display_params["sort_reverse"] = self.out_vars["sort_reverse"].get()
+            # ... set filters
             def parse_cs_string(s): return [item.strip() for item in s.split(',')] if s.strip() else None
-            config_obj.day_conditions = parse_cs_string(self.filter_vars["day_cond"].get())
-            config_obj.exclude_courses = parse_cs_string(self.filter_vars["exclude"].get())
-            config_obj.include_courses = parse_cs_string(self.filter_vars["include"].get())
-            config_obj.must_courses = parse_cs_string(self.filter_vars["must"].get())
-            config_obj.sort_key = self.out_vars["sort_str"].get()
-            config_obj.load_programs_if_saved = self.gen_vars["load_if_possible"].get()
+            config_obj.display_params["filters"]["day_conditions"] = parse_cs_string(self.filter_vars["day_cond"].get())
+            config_obj.display_params["filters"]["exclude_courses"] = parse_cs_string(self.filter_vars["exclude"].get())
+            config_obj.display_params["filters"]["include_courses"] = parse_cs_string(self.filter_vars["include"].get())
+            config_obj.display_params["filters"]["must_courses"] = parse_cs_string(self.filter_vars["must"].get())
+            config_obj.display_params["sort_key"] = self.out_vars["sort_str"].get()
+            config_obj.input["cache"]["enabled"] = self.gen_vars["load_if_possible"].get()
             self.controller.config.requirements = self.controller.requirements
             config_obj.update()
             cache_filepath = self._generate_cache_filename()
-            config_obj.generation["programs_file_path"] = cache_filepath
+            config_obj.input["cache"]["filepath"] = cache_filepath
             print("Configuration updated. Starting generation process...\n")
             summarized_programs, results_output, auto_save_path = run_program_generation(config_obj)
             self.queue.put((summarized_programs, results_output, auto_save_path))

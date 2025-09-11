@@ -25,36 +25,57 @@ class Config:
         Initializes the Config object with base parameters.
         Accepts keyword arguments to override defaults.
         """
-        # Base Parameters (can be set by the user/GUI)
-        self.courses_parameter = kwargs.get('courses_parameter', "course_offered_2526S.xls")
-        self.requirements_parameter = kwargs.get('requirements_parameter', "requirements_halil.json")
-        self.min_credit = kwargs.get('min_credit', 30)
-        self.max_credit = kwargs.get('max_credit', 42)
-        self.limit_number_of_programs = kwargs.get('limit_number_of_programs', 5)
-        self.day_conditions = kwargs.get('day_conditions', None)
-        self.exclude_courses = kwargs.get('exclude_courses', None)
-        self.include_courses = kwargs.get('include_courses', None)
-        self.must_courses = kwargs.get('must_courses', None)
-        self.sort_key = kwargs.get('sort_key', "total_days")
-        self.sort_reverse = kwargs.get('sort_reverse', False)
+        # --- File and Path Parameters ---
+        self.paths = {"root": None, "input_dir": None, "output_dir": None}
 
-        # Caching Parameters
-        self.load_programs_if_saved = kwargs.get('load_programs_if_saved', True)
-        self.save_programs_after_generation = kwargs.get('save_programs_after_generation', True)
+        self.input = {
+            "courses": {
+                "basename": kwargs.get('courses_basename', "course_offered_2526S.xls"),
+                "filepath": None
+            },
+            "requirements": {
+                "basename": kwargs.get('requirements_basename', "requirements_halil.json"),
+                "filepath": None
+            },
+            "cache": {
+                "enabled": kwargs.get('load_from_cache', True),
+                "filepath": None  # Will be set dynamically by the GUI
+            }
+        }
 
-        # Output Parameters
-        self.save_output = kwargs.get('save_output', True)
+        self.output = {
+            "report": {
+                "enabled": kwargs.get('save_report', True),
+                "filepath": None
+            },
+            "cache": {
+                "enabled": kwargs.get('save_to_cache', True),
+            }
+        }
 
-        # --- Derived Parameters (will be built by the update() method) ---
-        self.generation = {}
-        self.output = {}
-        self.REQUIREMENTS_FILEPATH = None
-        self.COURSES_FILEPATH = None
-        self.OUTPUT_FILEPATH = None
-        self.INPUT_FILEPATH = None
+        # --- Generation and Display Parameters ---
+        self.generation_params = {
+            "min_credit": kwargs.get('min_credit', 30),
+            "max_credit": kwargs.get('max_credit', 42),
+        }
 
-        # The update() method must be called to build the derived parameters
-        # before the config object is used by the backend.
+        self.display_params = {
+            "limit_results": kwargs.get('limit_results', 5),
+            "include_schedule": True,
+            "sort_key": kwargs.get('sort_key', "total_days"),
+            "sort_reverse": kwargs.get('sort_reverse', False),
+            "filters": {
+                "day_conditions": kwargs.get('day_conditions', None),
+                "exclude_courses": kwargs.get('exclude_courses', None),
+                "include_courses": kwargs.get('include_courses', None),
+                "must_courses": kwargs.get('must_courses', None),
+            }
+        }
+
+        # --- Derived, Processed Functions (built by update()) ---
+        self.filter_function = None
+        self.filter_description = "None"
+        self.sort_function = None
 
     def _build_filter_function(self):
         """
@@ -67,7 +88,8 @@ class Config:
         descriptions = []
 
         # --- 1. Day Condition Filter ---
-        if self.day_conditions and self.day_conditions[0]:
+        day_conds = self.display_params['filters']['day_conditions']
+        if day_conds and day_conds[0]:
             condition_str = self.day_conditions[0].strip()
             # Find the operator by checking for 2-char operators first
             op_str = next((op for op in ['<=', '>=', '==', '!='] if op in condition_str), None)
@@ -86,23 +108,24 @@ class Config:
                     print(f"Warning: Could not parse day condition '{condition_str}'. Skipping this filter.")
 
         # --- 2. Exclude Courses Filter ---
-        if self.exclude_courses:
-            # Using sets is much more efficient for membership testing
-            exclude_set = set(self.exclude_courses)
-            # A program is valid if its course set is disjoint from the exclude set
+        exclude_courses = self.display_params['filters']['exclude_courses']
+        if exclude_courses:
+            exclude_set = set(exclude_courses)
             filters.append(lambda p, es=exclude_set: es.isdisjoint(p['courses']))
-            descriptions.append(f"Excluding courses: {', '.join(self.exclude_courses)}")
+            descriptions.append(f"Excluding courses: {', '.join(exclude_courses)}")
 
         # --- 3. Include Courses Filter (At least one) ---
-        if self.include_courses:
-            include_set = set(self.include_courses)
+        include_courses = self.display_params['filters']['include_courses']
+        if include_courses:
+            include_set = set(include_courses)
             # A program is valid if its course set is NOT disjoint (i.e., has an intersection)
             filters.append(lambda p, inc_s=include_set: not inc_s.isdisjoint(p['courses']))
             descriptions.append(f"Including at least one of: {', '.join(self.include_courses)}")
 
         # --- 4. Must Have Courses Filter (All of them) ---
-        if self.must_courses:
-            must_set = set(self.must_courses)
+        must_courses = self.display_params['filters']['must_courses']
+        if must_courses:
+            must_set = set(must_courses)
             # A program is valid if the 'must_set' is a subset of the program's course set
             filters.append(lambda p, ms=must_set: ms.issubset(p['courses']))
             descriptions.append(f"Must include all: {', '.join(self.must_courses)}")
@@ -128,46 +151,27 @@ class Config:
         based on the base parameters. This should be called after all user settings
         have been applied to the object.
         """
-        root_dir = os.path.dirname(os.path.dirname(__file__))
-        self.INPUT_FILEPATH = os.path.join(root_dir, "data", "input")
-        self.OUTPUT_FILEPATH = os.path.join(root_dir, "data", "output")
+        # --- 1. Set up base paths ---
+        self.paths["root"] = os.path.dirname(os.path.dirname(__file__))
+        self.paths["input_dir"] = os.path.join(self.paths["root"], "data", "input")
+        self.paths["output_dir"] = os.path.join(self.paths["root"], "data", "output")
 
-        # Build full paths from parameters
-        self.REQUIREMENTS_FILEPATH = os.path.join(self.INPUT_FILEPATH, self.requirements_parameter)
-        self.COURSES_FILEPATH = os.path.join(self.INPUT_FILEPATH, self.courses_parameter)
+        # --- 2. Build full input file paths ---
+        self.input["courses"]["filepath"] = os.path.join(self.paths["input_dir"], self.input["courses"]["basename"])
+        self.input["requirements"]["filepath"] = os.path.join(self.paths["input_dir"], self.input["requirements"]["basename"])
 
-        self.generation = {
-            "min_credit": self.min_credit,
-            "max_credit": self.max_credit,
-            "load_programs_from_file": self.load_programs_if_saved,
-            "save_programs_to_file": self.save_programs_after_generation,
-            # This will be set by the GUI's hash-based generator
-            "programs_file_path": None
-        }
-
-        # --- NEW: Build filter function and description programmatically ---
-        filter_func, filter_desc = self._build_filter_function()
-
-        # In the GUI, you now pass a simple key like "total_days" or "total_credits"
-        sort_func = itemgetter(self.sort_key) if self.sort_key else None
-
-        self.output = {
-            "limit_results": self.limit_number_of_programs,
-            "filter_function": filter_func,
-            "filter_description": filter_desc,
-            "sort_function": sort_func,
-            "sort_description": self.sort_key,
-            "sort_reverse": self.sort_reverse,
-            "return_output": True,
-            "save_file": self.save_output,
-            "include_schedule": True
-        }
-
-        if self.output["save_file"]:
-            self.output["save_file"] = os.path.join(self.OUTPUT_FILEPATH,
-                                                    datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".txt")
+        # --- 3. Build full output file paths ---
+        if self.output["report"]["enabled"]:
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            self.output["report"]["filepath"] = os.path.join(self.paths["output_dir"], f"{timestamp}.txt")
         else:
-            self.output["save_file"] = False
+            self.output["report"]["filepath"] = None
+
+        # --- 4. Build filter and sort functions ---
+        self.filter_function, self.filter_description = self._build_filter_function()
+
+        sort_key = self.display_params.get("sort_key")
+        self.sort_function = itemgetter(sort_key) if sort_key else None
 
 
 # For any script that needs a simple, default configuration without the GUI

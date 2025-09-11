@@ -4,22 +4,22 @@ import os
 import pickle
 from src.course_models import CourseSection
 
-# --- MODIFIED --- Accepts a config object
-def load_requirements_from_json(config_obj):
-    """Loads requirements from a JSON file specified in the config object."""
+# --- MODIFIED --- Accepts a filepath directly
+def load_requirements_from_json(filepath):
+    """Loads requirements from the specified JSON file."""
     try:
-        with open(config_obj.REQUIREMENTS_FILEPATH, 'r', encoding='utf-8') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
-        print(f"Error: Requirements file not found at '{config_obj.REQUIREMENTS_FILEPATH}'.")
+        print(f"Error: Requirements file not found at '{filepath}'.")
         return None
     except json.JSONDecodeError:
-        print(f"Error: Invalid JSON format in '{config_obj.REQUIREMENTS_FILEPATH}'.")
+        print(f"Error: Invalid JSON format in '{filepath}'.")
         return None
 
-# --- MODIFIED --- Accepts a config object
-def course_parses(config_obj, requirements=None):
-    df = pd.read_excel(config_obj.COURSES_FILEPATH)
+# --- MODIFIED --- Accepts a filepath directly
+def course_parses(filepath, requirements=None):
+    df = pd.read_excel(filepath)
     courses = {}
 
     # --- This optimization logic now works correctly ---
