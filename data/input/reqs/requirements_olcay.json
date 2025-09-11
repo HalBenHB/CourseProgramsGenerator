@@ -1,0 +1,109 @@
+[
+  {
+    "requirement_name": "Compulsory",
+    "candidates": [
+      "CS 102.A",
+      "BUS 101.A"
+    ],
+    "needed": "=2"
+  },
+  {
+    "requirement_name": "BUS101 Lab",
+    "candidates": [
+      "BUS 101L.A",
+      "BUS 101L.B",
+      "BUS 101L.C",
+      "BUS 101L.D",
+      "BUS 101L.E",
+      "BUS 101L.F",
+      "BUS 101L.G"
+    ],
+    "needed": "=1"
+  },
+  {
+    "requirement_name": "MATH 104",
+    "candidates": [
+      "MATH 104.A",
+      "MATH 104.B",
+      "MATH 104.C",
+      "MATH 104.D"
+    ],
+    "needed": "=1"
+  },
+  {
+    "requirement_name": "MATH 104R",
+    "candidates": [
+      "MATH 104R.A",
+      "MATH 104R.B",
+      "MATH 104R.C",
+      "MATH 104R.D"
+    ],
+    "needed": "=1"
+  },
+  {
+    "requirement_name": "PHYS 102",
+    "candidates": [
+      "PHYS 102.A",
+      "PHYS 102.B",
+      "PHYS 102.C",
+      "PHYS 102.D",
+      "PHYS 102.E"
+    ],
+    "needed": "=1"
+  },
+  {
+    "requirement_name": "PHYS 102R",
+    "candidates": [
+      "PHYS 102L.A1",
+      "PHYS 102L.B1",
+      "PHYS 102L.C1",
+      "PHYS 102L.D1",
+      "PHYS 102L.E1"
+    ],
+    "needed": "=1"
+  },
+  {
+    "requirement_name": "ENG 102",
+    "candidates": [
+      "ENG 102.A",
+      "ENG 102.AA",
+      "ENG 102.AB",
+      "ENG 102.AC",
+      "ENG 102.AD",
+      "ENG 102.AE",
+      "ENG 102.AF",
+      "ENG 102.AG",
+      "ENG 102.AH",
+      "ENG 102.AI",
+      "ENG 102.AJ",
+      "ENG 102.AK",
+      "ENG 102.AL",
+      "ENG 102.B",
+      "ENG 102.C",
+      "ENG 102.D",
+      "ENG 102.E",
+      "ENG 102.F",
+      "ENG 102.G",
+      "ENG 102.H",
+      "ENG 102.I",
+      "ENG 102.J",
+      "ENG 102.K",
+      "ENG 102.L",
+      "ENG 102.M",
+      "ENG 102.N",
+      "ENG 102.O",
+      "ENG 102.P",
+      "ENG 102.Q",
+      "ENG 102.R",
+      "ENG 102.S",
+      "ENG 102.T",
+      "ENG 102.U",
+      "ENG 102.V",
+      "ENG 102.W",
+      "ENG 102.X",
+      "ENG 102.Y",
+      "ENG 102.Z"
+    ],
+    "needed": "=1"
+  }
+]

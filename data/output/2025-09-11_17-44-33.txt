@@ -1,5 +1,7 @@
-Sorted by: program['total_days']
-Total programs: 83047
+Filter functions: None
+Sorted by: total_days
+Total programs found: 83047
+Displaying top 5:
 
 Program 1:
 Courses: OPER 312.B | OPER 318.A | OPER 403.A | MGMT 401.A | SEC 401.G |
