@@ -2,6 +2,19 @@
 
 import os
 from datetime import datetime
+from operator import itemgetter
+import operator
+
+# A mapping from string representations to actual operator functions
+SUPPORTED_OPERATORS = {
+    '<=': operator.le,
+    '>=': operator.ge,
+    '=': operator.eq,
+    '==': operator.eq,
+    '<': operator.lt,
+    '>': operator.gt,
+    '!=': operator.ne
+}
 
 
 class Config:
@@ -22,7 +35,7 @@ class Config:
         self.exclude_courses = kwargs.get('exclude_courses', None)
         self.include_courses = kwargs.get('include_courses', None)
         self.must_courses = kwargs.get('must_courses', None)
-        self.sort_condition_str = kwargs.get('sort_condition_str', "program['total_days']")
+        self.sort_key = kwargs.get('sort_key', "total_days")
         self.sort_reverse = kwargs.get('sort_reverse', False)
 
         # Caching Parameters
@@ -42,6 +55,72 @@ class Config:
 
         # The update() method must be called to build the derived parameters
         # before the config object is used by the backend.
+
+    def _build_filter_function(self):
+        """
+        Programmatically builds a filter function and its description string
+        without using eval().
+        """
+        # A list to hold individual filter functions (lambdas)
+        filters = []
+        # A list to hold human-readable descriptions of the active filters
+        descriptions = []
+
+        # --- 1. Day Condition Filter ---
+        if self.day_conditions and self.day_conditions[0]:
+            condition_str = self.day_conditions[0].strip()
+            # Find the operator by checking for 2-char operators first
+            op_str = next((op for op in ['<=', '>=', '==', '!='] if op in condition_str), None)
+            if not op_str: # If not a 2-char op, check for 1-char op
+                op_str = next((op for op in ['<', '>', '='] if op in condition_str), None)
+
+            if op_str and op_str in SUPPORTED_OPERATORS:
+                try:
+                    value = int(condition_str.replace(op_str, ''))
+                    op_func = SUPPORTED_OPERATORS[op_str]
+
+                    # Create the actual function for this filter
+                    filters.append(lambda p, op=op_func, v=value: op(p['total_days'], v))
+                    descriptions.append(f"Total days {op_str} {value}")
+                except (ValueError, TypeError):
+                    print(f"Warning: Could not parse day condition '{condition_str}'. Skipping this filter.")
+
+        # --- 2. Exclude Courses Filter ---
+        if self.exclude_courses:
+            # Using sets is much more efficient for membership testing
+            exclude_set = set(self.exclude_courses)
+            # A program is valid if its course set is disjoint from the exclude set
+            filters.append(lambda p, es=exclude_set: es.isdisjoint(p['courses']))
+            descriptions.append(f"Excluding courses: {', '.join(self.exclude_courses)}")
+
+        # --- 3. Include Courses Filter (At least one) ---
+        if self.include_courses:
+            include_set = set(self.include_courses)
+            # A program is valid if its course set is NOT disjoint (i.e., has an intersection)
+            filters.append(lambda p, inc_s=include_set: not inc_s.isdisjoint(p['courses']))
+            descriptions.append(f"Including at least one of: {', '.join(self.include_courses)}")
+
+        # --- 4. Must Have Courses Filter (All of them) ---
+        if self.must_courses:
+            must_set = set(self.must_courses)
+            # A program is valid if the 'must_set' is a subset of the program's course set
+            filters.append(lambda p, ms=must_set: ms.issubset(p['courses']))
+            descriptions.append(f"Must include all: {', '.join(self.must_courses)}")
+
+        # --- Combine all active filters into a single function ---
+        if not filters:
+            # If no filters are active, return a function that always passes
+            return (lambda program: True, "None")
+
+        def final_filter(program):
+            # The program passes if ALL individual filter functions return True
+            program_courses_set = set(program['courses'])
+            # We pass a modified program object with a pre-calculated set for efficiency
+            program_with_set = {**program, 'courses': program_courses_set}
+            return all(f(program_with_set) for f in filters)
+
+        return (final_filter, " and ".join(descriptions))
+
 
     def update(self):
         """
@@ -66,24 +145,18 @@ class Config:
             "programs_file_path": None
         }
 
-        # Build filter and sort functions
-        day_cond = f'program["total_days"] {self.day_conditions[0]}' if self.day_conditions else None
-        exclude_cond = " and ".join(
-            [f'"{c}" not in program["courses"]' for c in self.exclude_courses]) if self.exclude_courses else None
-        include_cond = " or ".join(
-            [f'"{c}" in program["courses"]' for c in self.include_courses]) if self.include_courses else None
-        must_cond = " and ".join(
-            [f'"{c}" in program["courses"]' for c in self.must_courses]) if self.must_courses else None
+        # --- NEW: Build filter function and description programmatically ---
+        filter_func, filter_desc = self._build_filter_function()
 
-        conditions = [c for c in [day_cond, exclude_cond, include_cond, must_cond] if c]
-        filter_condition_str = " and ".join(f"({c})" for c in conditions) if conditions else "True"
+        # In the GUI, you now pass a simple key like "total_days" or "total_credits"
+        sort_func = itemgetter(self.sort_key) if self.sort_key else None
 
         self.output = {
             "limit_results": self.limit_number_of_programs,
-            "filter_function": eval(f"lambda program: {filter_condition_str}"),
-            "filter_description": filter_condition_str if filter_condition_str != "True" else "None",
-            "sort_function": eval(f"lambda program: {self.sort_condition_str}") if self.sort_condition_str else None,
-            "sort_description": self.sort_condition_str,
+            "filter_function": filter_func,
+            "filter_description": filter_desc,
+            "sort_function": sort_func,
+            "sort_description": self.sort_key,
             "sort_reverse": self.sort_reverse,
             "return_output": True,
             "save_file": self.save_output,

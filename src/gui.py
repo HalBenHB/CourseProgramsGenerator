@@ -152,6 +152,30 @@ class Screen2(ttk.Frame):
     "BSCS FE Serbest Seçmeli": {
         "file": "BSCS FE Serbest Seçmeli.xls",
         "needed": "<=3"
+    },
+    "TLL 101 Offered Branches": {
+        "file": "TLL101.xls",
+        "needed": "=1"
+    },
+    "TLL 102 Offered Branches": {
+        "file": "TLL102.xls",
+        "needed": "=1"
+    },
+    "ENG 101 Offered Branches": {
+        "file": "ENG101.xls",
+        "needed": "=1"
+    },
+    "ENG 102 Offered Branches": {
+        "file": "ENG102.xls",
+        "needed": "=1"
+    },
+    "HIST 201 Offered Branches": {
+        "file": "HIST201.xls",
+        "needed": "=1"
+    },
+    "HIST 202 Offered Branches": {
+        "file": "HIST202.xls",
+        "needed": "=1"
     }
 }
         ttk.Label(self, text="Requirement Builder", font=("Helvetica", 16)).pack(pady=10, fill="x")
@@ -411,7 +435,7 @@ class Screen3(ttk.Frame):
         help_texts = {
             "credits": "Set the desired range for total ECTS credits in a program.\nLeave empty to use defaults (30-42).",
             "limit": "The maximum number of valid programs to display.\nLeave empty for NO LIMIT.",
-            "sort": "How to sort the final list. Use Python dictionary syntax.\nExample: program['total_days']",
+            "sort": "How to sort the final list. Use Python dictionary syntax.\nExample: total_days, total_credits, total_hours, __len__",
             "cache": "If checked, the app will load pre-calculated programs if the\ncourse list, requirements, and credit limits haven't changed,\nsaving significant time. Uncheck to force a new calculation.",
             "day_cond": "Filter by the number of days with classes. Comma-separated.\nExample: <5",
             "exclude": "Programs with ANY of these courses will be removed. Comma-separated.\nExample: CS 447.A, ACC 201.A",
@@ -436,7 +460,7 @@ class Screen3(ttk.Frame):
         Tooltip(cache_check, help_texts["cache"])
         out_frame = ttk.LabelFrame(top_frame, text="Output Parameters")
         out_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        self.out_vars = {"limit": tk.StringVar(value=self.controller.config.limit_number_of_programs), "sort_str": tk.StringVar(value=self.controller.config.sort_condition_str), "sort_reverse": tk.BooleanVar(value=False)}
+        self.out_vars = {"limit": tk.StringVar(value=self.controller.config.limit_number_of_programs), "sort_str": tk.StringVar(value=self.controller.config.sort_key), "sort_reverse": tk.BooleanVar(value=False)}
         ttk.Label(out_frame, text="Limit Programs:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
         ttk.Entry(out_frame, textvariable=self.out_vars["limit"], width=10).grid(row=0, column=1, sticky="w", padx=5, pady=2)
         Tooltip(ttk.Label(out_frame, text="(?)", cursor="question_arrow"), help_texts["limit"]).widget.grid(row=0, column=2, sticky="w", padx=5)
@@ -531,7 +555,7 @@ class Screen3(ttk.Frame):
             config_obj.exclude_courses = parse_cs_string(self.filter_vars["exclude"].get())
             config_obj.include_courses = parse_cs_string(self.filter_vars["include"].get())
             config_obj.must_courses = parse_cs_string(self.filter_vars["must"].get())
-            config_obj.sort_condition_str = self.out_vars["sort_str"].get()
+            config_obj.sort_key = self.out_vars["sort_str"].get()
             config_obj.load_programs_if_saved = self.gen_vars["load_if_possible"].get()
             self.controller.config.requirements = self.controller.requirements
             config_obj.update()

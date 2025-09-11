@@ -1,6 +1,5 @@
 from src.program_generator import time_to_minutes
 
-
 def format_program_info(program, courses, include_schedule):
     program_output = f"\nProgram {program['program_index']}:\n"  # Assuming you will add program_index when calling this
     program_output += "Courses:"
@@ -133,7 +132,8 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
             # --- THE UI OPTIMIZATION ---
             # Only print a progress update periodically, not on every single iteration.
             # The modulo operator (%) is perfect for this.
-            if (i + 1) % 100 == 0 or (i + 1) == total_to_process:
+            progress_update_number = 100 if total_to_process<=20000 else 1000
+            if (i + 1) % progress_update_number == 0 or (i + 1) == total_to_process:
                 print(f'\rOutput generated: {i + 1}/{total_to_process}', end='', flush=True)
 
         print() # Final newline after progress bar
