@@ -72,7 +72,8 @@ class Config:
             "sort_key": kwargs.get('sort_key', "total_days"),
             "sort_reverse": kwargs.get('sort_reverse', False),
             "filters": {
-                "day_conditions": kwargs.get('day_conditions', None),
+                "day_num_condition": kwargs.get('day_num_condition', None),
+                "day_specific_conditions": kwargs.get('day_specific_conditions', None),
                 "exclude_courses": kwargs.get('exclude_courses', None),
                 "include_courses": kwargs.get('include_courses', None),
                 "must_courses": kwargs.get('must_courses', None),
@@ -95,9 +96,9 @@ class Config:
         descriptions = []
 
         # --- 1. Day Condition Filter ---
-        day_conds = self.display_params['filters']['day_conditions']
-        if day_conds and day_conds[0]:
-            condition_str = day_conds[0].strip()
+        num_cond = self.display_params['filters'].get('day_num_condition')
+        if num_cond:
+            condition_str = num_cond.strip()
             # Find the operator by checking for 2-char operators first
             op_str = next((op for op in ['<=', '>=', '==', '!='] if op in condition_str), None)
             if not op_str:  # If not a 2-char op, check for 1-char op
@@ -112,7 +113,24 @@ class Config:
                     filters.append(lambda p, op=op_func, v=value: op(p['total_days'], v))
                     descriptions.append(f"Total days {op_str} {value}")
                 except (ValueError, TypeError):
-                    print(f"Warning: Could not parse day condition '{condition_str}'. Skipping this filter.")
+                    print(f"Warning: Could not parse day number condition '{condition_str}'. Skipping this filter.")
+
+        # --- 2. Day SPECIFIC Condition Filter (NEW LOGIC) ---
+        day_conds = self.display_params['filters'].get('day_specific_conditions')
+        if day_conds:
+            # Separate the days into 'must have' and 'must not have' sets
+            must_have_days = {day for day, state in day_conds.items() if state == 1} # 1 = Checked (✔)
+            must_not_have_days = {day for day, state in day_conds.items() if state == 2} # 2 = Crossed (✘)
+
+            # Add a filter function for days that MUST be included
+            if must_have_days:
+                filters.append(lambda p, required=must_have_days: required.issubset(p['days']))
+                descriptions.append(f"Must be on: {', '.join(sorted(must_have_days))}")
+
+            # Add a filter function for days that MUST be excluded
+            if must_not_have_days:
+                filters.append(lambda p, forbidden=must_not_have_days: forbidden.isdisjoint(p['days']))
+                descriptions.append(f"Must NOT be on: {', '.join(sorted(must_not_have_days))}")
 
         # --- 2. Exclude Courses Filter ---
         exclude_courses = self.display_params['filters']['exclude_courses']
@@ -145,9 +163,15 @@ class Config:
         def final_filter(program):
             # The program passes if ALL individual filter functions return True
             program_courses_set = set(program['courses'])
+            program_days_set = set(d['day'] for d in program['schedule']) # Calculate program days
+
             # We pass a modified program object with a pre-calculated set for efficiency
-            program_with_set = {**program, 'courses': program_courses_set}
-            return all(f(program_with_set) for f in filters)
+            program_with_sets = {
+                **program,
+                'courses': program_courses_set,
+                'days': program_days_set
+            }
+            return all(f(program_with_sets) for f in filters)
 
         return (final_filter, " and ".join(descriptions))
 

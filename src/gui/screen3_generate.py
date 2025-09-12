@@ -80,20 +80,51 @@ class Screen3(ttk.Frame):
         filter_frame.pack(fill="x", padx=5, pady=5)
         filter_frame.columnconfigure(1, weight=1)
 
-        self.filter_vars = {"day_cond": tk.StringVar(), "exclude": tk.StringVar(), "include": tk.StringVar(),
+        self.filter_vars = {"day_num_cond": tk.StringVar(), "exclude": tk.StringVar(), "include": tk.StringVar(),
                             "must": tk.StringVar()}
 
+        # We'll use IntVar: 0=Empty, 1=Checked (✔), 2=Crossed (✘)
+        self.day_checkbox_vars = {day: tk.IntVar(value=0) for day in ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]}
 
-        row_map = [("Day Conditions:", "day_cond"), ("Exclude Courses:", "exclude"),
-                   ("Include At Least One:", "include"), ("Must Have Courses:", "must")]
-        for i, (label_text, key) in enumerate(row_map):
-            ttk.Label(filter_frame, text=label_text).grid(row=i, column=0, sticky="w", padx=5, pady=2)
-            ttk.Entry(filter_frame, textvariable=self.filter_vars[key], width=40).grid(row=i, column=1, sticky="ew",
-                                                                                       padx=5, pady=2)
-            Tooltip(ttk.Label(filter_frame, text="(?)", cursor="question_arrow"), help_texts[key]).widget.grid(row=i,
-                                                                                                               column=2,
-                                                                                                               sticky="w",
-                                                                                                               padx=5)
+        # --- REBUILDING THE FILTER FRAME UI ---
+
+        # 1. Day Conditions Row
+        day_filter_frame = ttk.Frame(filter_frame)
+        day_filter_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=5, pady=2)
+
+        ttk.Label(day_filter_frame, text="Day Conditions:").pack(side="left")
+
+        # Number of days entry
+        ttk.Entry(day_filter_frame, textvariable=self.filter_vars["day_num_cond"], width=5).pack(side="left", padx=5)
+        Tooltip(ttk.Label(day_filter_frame, text="(?)", cursor="question_arrow"),
+                "Filter by number of days (e.g., <=3)").widget.pack(side="left", padx=(0, 20))
+
+        # Day specific checkboxes
+        for day, var in self.day_checkbox_vars.items():
+            # Create the checkbutton
+            cb = ttk.Checkbutton(day_filter_frame, text=day[:2], variable=var)
+
+            # Bind to the mouse click event instead.
+            cb.bind("<Button-1>", lambda event, v=var: self._on_day_checkbox_click(event, v))
+
+
+            cb.pack(side="left", padx=2)
+            # Create a tooltip for each checkbox
+            Tooltip(cb,
+                    f"Cycle states for {day}:\n  Empty: Don't care\n  Checked (✔): Must include\n  Crossed (✘): Must exclude")
+
+
+        # 2. Other Filter Rows (Exclude, Include, Must)
+        row_map = [("Exclude Courses:", "exclude", help_texts["exclude"]),
+                   ("Include At Least One:", "include", help_texts["include"]),
+                   ("Must Have Courses:", "must", help_texts["must"])]
+
+        for i, (label_text, key, help_text) in enumerate(row_map):
+            # Start at row=1 since day conditions are in row=0
+            ttk.Label(filter_frame, text=label_text).grid(row=i+1, column=0, sticky="w", padx=5, pady=2)
+            ttk.Entry(filter_frame, textvariable=self.filter_vars[key], width=40).grid(row=i+1, column=1, sticky="ew", padx=5, pady=2)
+            Tooltip(ttk.Label(filter_frame, text="(?)", cursor="question_arrow"), help_text).widget.grid(row=i+1, column=2, sticky="w", padx=5)
+
         bottom_frame = ttk.Frame(self)
         bottom_frame.pack(fill="x", pady=10)
         ttk.Button(bottom_frame, text="Back", command=lambda: controller.show_screen2()).pack(side="left")
@@ -208,10 +239,16 @@ class Screen3(ttk.Frame):
             config_obj.display_params["sort_reverse"] = self.out_vars["sort_reverse"].get()
 
             # ... set filters
-            def parse_cs_string(s):
-                return [item.strip() for item in s.split(',')] if s.strip() else None
+            def parse_cs_string(s): return [item.strip() for item in s.split(',')] if s.strip() else None
 
-            config_obj.display_params["filters"]["day_conditions"] = parse_cs_string(self.filter_vars["day_cond"].get())
+            config_obj.display_params["filters"]["day_num_condition"] = self.filter_vars["day_num_cond"].get()
+
+            # Pass the state of the day checkboxes
+            # We convert the IntVars to a simple dictionary for portability
+            day_states = {day: var.get() for day, var in self.day_checkbox_vars.items()}
+            config_obj.display_params["filters"]["day_specific_conditions"] = day_states
+
+            # Pass the other course filters
             config_obj.display_params["filters"]["exclude_courses"] = parse_cs_string(self.filter_vars["exclude"].get())
             config_obj.display_params["filters"]["include_courses"] = parse_cs_string(self.filter_vars["include"].get())
             config_obj.display_params["filters"]["must_courses"] = parse_cs_string(self.filter_vars["must"].get())
@@ -233,3 +270,25 @@ class Screen3(ttk.Frame):
                 ("\n--- AN ERROR OCCURRED ---\nError: Please ensure Min/Max Credits and Limit Programs are valid numbers.",))
         except Exception as e:
             self.queue.put((f"\n--- AN ERROR OCCURRED ---\n{e}",))
+
+    def _on_day_checkbox_click(self, event, var):
+        """
+        Handles a click event on a day checkbox, manually cycling its
+        variable and visual state. Returns 'break' to prevent default behavior.
+        """
+        checkbox_widget = event.widget
+
+        # --- FIX: We now get the value directly from the passed IntVar ---
+        current_state = var.get()
+        next_state = (current_state + 1) % 3
+        var.set(next_state)
+
+        # Manually set the visual state of the widget
+        if next_state == 0:  # Empty state
+            checkbox_widget.state(['!selected', '!alternate'])
+        elif next_state == 1:  # Checked state (✔)
+            checkbox_widget.state(['selected', '!alternate'])
+        elif next_state == 2:  # Crossed state (✘)
+            checkbox_widget.state(['selected', 'alternate'])
+
+        return "break"

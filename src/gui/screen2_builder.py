@@ -10,72 +10,107 @@ class Screen2(ttk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.currently_editing_req_index = None
+        self.double_click_locked = False
         self.PREDEFINED_REQS = {
             "BABUS Özelleşilen Alan Seçmeli": {
+				"category": "Business Administration",
+                "folder": "BABUS",
                 "file": "BABUS Özelleşilen Alan Seçmeli.xls",
                 "needed": "<=3"
             },
             "BABUS Serbest Seçmeli": {
+				"category": "Business Administration",
+                "folder": "BABUS",
                 "file": "BABUS Serbest Seçmeli.xls",
                 "needed": "<=4"
             },
             "BABUS Program İçin Seçmeli (FIN)": {
+				"category": "Business Administration",
+                "folder": "BABUS",
                 "file": "BABUS Program İçin Seçmeli (FIN).xls",
                 "needed": "<=1"
             },
             "BABUS Program İçin Seçmeli (MGMT)": {
+				"category": "Business Administration",
+                "folder": "BABUS",
                 "file": "BABUS Program İçin Seçmeli (MGMT).xls",
                 "needed": "<=1"
             },
             "BABUS Program İçin Seçmeli (MIS)": {
+				"category": "Business Administration",
+                "folder": "BABUS",
                 "file": "BABUS Program İçin Seçmeli (MIS).xls",
                 "needed": "<=1"
             },
             "BABUS Program İçin Seçmeli (MKTG)": {
+				"category": "Business Administration",
+                "folder": "BABUS",
                 "file": "BABUS Program İçin Seçmeli (MKTG).xls",
                 "needed": "<=1"
             },
             "BABUS Program İçin Seçmeli (OPER)": {
+				"category": "Business Administration",
+                "folder": "BABUS",
                 "file": "BABUS Program İçin Seçmeli (OPER).xls",
                 "needed": "<=1"
             },
             "BSCS Program İçi Seçmeli": {
+				"category": "Computer Science",
+                "folder": "BSCS",
                 "file": "BSCS Program İçi Seçmeli.xls",
                 "needed": "<=3"
             },
             "BSCS FE Sosyal Bilimler Seçmeli": {
+				"category": "Computer Science",
+                "folder": "BSCS",
                 "file": "BSCS FE Sosyal Bilimler Seçmeli.xls",
                 "needed": "<=1"
             },
             "BSCS FE Sertifika Seçmeli": {
+				"category": "Computer Science",
+                "folder": "BSCS",
                 "file": "BSCS FE Sertifika Seçmeli.xls",
                 "needed": "<=2"
             },
             "BSCS FE Serbest Seçmeli": {
+				"category": "Computer Science",
+                "folder": "BSCS",
                 "file": "BSCS FE Serbest Seçmeli.xls",
                 "needed": "<=3"
             },
             "TLL 101 Offered Branches": {
+				"category": "General",
+                "folder": "General",
                 "file": "TLL101.xls",
                 "needed": "=1"
             },
             "TLL 102 Offered Branches": {
+				"category": "General",
+                "folder": "General",
                 "file": "TLL102.xls",
                 "needed": "=1"
             },
             "ENG 101 Offered Branches": {
+				"category": "General",
+                "folder": "General",
                 "file": "ENG101.xls",
                 "needed": "=1"
             },
             "ENG 102 Offered Branches": {
+				"category": "General",
+                "folder": "General",
                 "file": "ENG102.xls",
                 "needed": "=1"
             },
             "HIST 201 Offered Branches": {
+				"category": "General",
+                "folder": "General",
                 "file": "HIST201.xls",
                 "needed": "=1"
             },
             "HIST 202 Offered Branches": {
+				"category": "General",
+                "folder": "General",
                 "file": "HIST202.xls",
                 "needed": "=1"
             }
@@ -136,10 +171,29 @@ class Screen2(ttk.Frame):
                                                                                                          padx=5)
         adder_frame = ttk.LabelFrame(req_list_frame, text="Quick Add Requirement")
         adder_frame.pack(fill="x", padx=5, pady=10)
-        adder_options = list(self.PREDEFINED_REQS.keys()) + ["Add from Custom File..."]
-        self.adder_combo = ttk.Combobox(adder_frame, values=adder_options, state="readonly")
-        self.adder_combo.pack(fill="x", padx=5, pady=5)
-        self.adder_combo.set("Select a template to add...")
+        self.req_tree = ttk.Treeview(adder_frame, show="tree", height=8) # 'show="tree"' hides the ugly "#0" column
+        self.req_tree.pack(fill="x", expand=True, padx=5, pady=5)
+        # Populate the Treeview with our structured data
+        categories = {}
+        for name, data in self.PREDEFINED_REQS.items():
+            cat_name = data["category"]
+            if cat_name not in categories:
+                # Insert the category as a top-level item (a parent)
+                categories[cat_name] = self.req_tree.insert("", "end", text=cat_name, open=True)
+
+            # Insert the requirement as a child of its category
+            self.req_tree.insert(categories[cat_name], "end", text=name, values=(name,))
+
+        # Add the "Custom File" option at the end
+        self.req_tree.insert("", "end", text="Add from Custom File...", values=("Add from Custom File...",))
+
+        # Make the category headings unselectable
+        for cat_id in categories.values():
+            self.req_tree.item(cat_id, tags=('category',))
+        self.req_tree.tag_configure('category', foreground='gray')  # Style the headings
+        self.req_tree.bind('<<TreeviewSelect>>', self.on_tree_select)
+        self.req_tree.bind('<Double-1>', self.on_tree_double_click)
+
         ttk.Button(adder_frame, text="Add", command=self.add_requirement_from_template).pack(pady=5)
         bottom_frame = ttk.Frame(self)
         bottom_frame.pack(fill="x", pady=10, side="bottom")
@@ -152,10 +206,15 @@ class Screen2(ttk.Frame):
         self.update_editor_panel_state()
 
     def add_requirement_from_template(self):
-        selection = self.adder_combo.get()
-        if not selection or selection == "Select a template to add...":
-            messagebox.showinfo("Info", "Please select a template from the dropdown first.")
+        # --- MODIFIED: Get selection from Treeview ---
+        selected_item = self.req_tree.focus()
+        if not selected_item:
+            messagebox.showinfo("Info", "Please select a template from the list first.")
             return
+
+        # The 'values' tuple holds the real name we stored
+        selection = self.req_tree.item(selected_item, "values")[0]
+
         if selection == "Add from Custom File...":
             filepath = filedialog.askopenfilename(title="Select Custom Course List File",
                                                   filetypes=(("Excel Files", "*.xls*"), ("All Files", "*.*")))
@@ -165,11 +224,16 @@ class Screen2(ttk.Frame):
             self._create_req_from_file(filepath, req_name, needed)
         else:
             req_config = self.PREDEFINED_REQS[selection]
-            filepath = os.path.join(self.controller.config.paths["pre_reqs_dir"], req_config['file'])
+            # --- MODIFIED: Use the new 'folder' key to build the path ---
+            pre_reqs_path = self.controller.config.paths["pre_reqs_dir"]
+            filepath = os.path.join(pre_reqs_path, req_config['folder'], req_config['file'])
+
+            # Ensure the subdirectory exists (good practice)
+            os.makedirs(os.path.join(pre_reqs_path, req_config['folder']), exist_ok=True)
+
             req_name = selection
             needed = req_config['needed']
             self._create_req_from_file(filepath, req_name, needed)
-        self.adder_combo.set("Select a template to add...")
 
     def _create_req_from_file(self, filepath, req_name, needed_cond):
         try:
@@ -369,3 +433,39 @@ class Screen2(ttk.Frame):
         with open(temp_req_path, 'w') as f: json.dump(self.controller.requirements, f)
         self.controller.config.input["requirements"]["basename"] = os.path.basename(temp_req_path)
         self.controller.show_screen3()
+
+    def on_tree_select(self, event):
+        """Prevents the user from selecting the category headings."""
+        selected_item = self.req_tree.focus()
+        if self.req_tree.tag_has('category', selected_item):
+            # If a category heading is clicked, deselect it
+            self.req_tree.selection_remove(selected_item)
+
+    def on_tree_double_click(self, event):
+        """Adds the double-clicked requirement to the list, with debouncing."""
+
+        # --- DEBOUNCING LOGIC ---
+        # If the action is currently locked, do nothing.
+        if self.double_click_locked:
+            print("Debouncing: Ignoring rapid repeat click.")
+            return
+
+        selected_item_id = self.req_tree.focus()
+
+        if not selected_item_id or self.req_tree.tag_has('category', selected_item_id):
+            return
+
+        # Lock the action to prevent immediate re-triggering.
+        self.double_click_locked = True
+
+        # If it's a valid item, call the existing add function
+        self.add_requirement_from_template()
+
+        # Schedule the lock to be released after 500 milliseconds (0.5 seconds).
+        DEBOUNCE_DELAY_MS = 500
+        self.after(DEBOUNCE_DELAY_MS, self.unlock_double_click)
+
+    def unlock_double_click(self):
+        """Resets the double-click lock flag."""
+        self.double_click_locked = False
+        print("Double-click unlocked.")
