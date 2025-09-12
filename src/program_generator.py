@@ -61,9 +61,10 @@ def check_program_course_conflict(current_program_param, candidate_schedule_para
 
 
 def calculate_program_stats(program, courses):
-    """Calculates total days and total hours for a program."""
+    """Calculates total days, total hours, and total courses for a program."""
     days = set()
     total_minutes = 0
+
     for course_code in program['courses']:
         for schedule_entry in courses[course_code].schedule:
             days.add(schedule_entry['day'])
@@ -73,6 +74,7 @@ def calculate_program_stats(program, courses):
 
     program["total_days"] = len(days)
     program["total_hours"] = total_minutes / 60.0  # Convert minutes to hours
+    program["total_courses"] = len(program['courses'])
     return program
 
 
@@ -95,7 +97,11 @@ def is_program_valid(program, requirements, courses, min_credit, max_credit):
 
 
 def _generate_programs(requirement_index, current_program_courses, requirements, courses, min_credit, max_credit,
-                       possible_programs):
+                       possible_programs, cancel_event):
+    # At the start of each major step, check if cancellation has been requested.
+    if cancel_event and cancel_event.is_set():
+        return # Exit the recursion immediately
+
     if requirement_index == len(requirements):
         program = {
             "courses" : current_program_courses,
@@ -128,17 +134,24 @@ def _generate_programs(requirement_index, current_program_courses, requirements,
         max_courses_for_req = float('inf')  # actually limited by total program credits/other reqs
 
     def generate_combinations_for_requirement(candidate_index, courses_taken_for_req, current_program_courses):
+        if cancel_event and cancel_event.is_set():
+            return
+
         if courses_taken_for_req > max_courses_for_req:  # Stop if we've taken too many for this requirement
             return
 
         if candidate_index == len(course_options):  # Reached end of candidates for this requirement
             if check_satisfied(needed_condition, courses_taken_for_req):  # Check if we satisfied the needed condition
                 _generate_programs(requirement_index + 1, current_program_courses, requirements,
-                                   courses, min_credit, max_credit, possible_programs)  # Move to next requirement
+                                   courses, min_credit, max_credit, possible_programs, cancel_event)  # Move to next requirement
             return
 
         # Option A: Don't take the current candidate course
         generate_combinations_for_requirement(candidate_index + 1, courses_taken_for_req, current_program_courses)
+
+        # Early exit if a cancel was requested during the first recursive branch
+        if cancel_event and cancel_event.is_set():
+            return
 
         # Option B: Take the current candidate course if no conflict
         candidate_course_code = course_options[candidate_index]
@@ -159,7 +172,7 @@ def _generate_programs(requirement_index, current_program_courses, requirements,
     generate_combinations_for_requirement(0, 0, current_program_courses.copy())
 
 
-def generate_programs(requirements, courses, min_credit_param, max_credit_param):
+def generate_programs(requirements, courses, min_credit_param, max_credit_param, cancel_event):
     """
     Generates a list of possible course programs that satisfy the given requirements and credit limits.
 
@@ -168,6 +181,7 @@ def generate_programs(requirements, courses, min_credit_param, max_credit_param)
         courses: A dictionary of course information, keyed by course code.
         min_credit: The minimum total credits for a valid program.
         max_credit: The maximum total credits for a valid program.
+        cancel_event (threading.Event, optional): Event to signal cancellation.
 
     Returns:
         A list of dictionaries, where each dictionary represents a valid course program.
@@ -182,5 +196,5 @@ def generate_programs(requirements, courses, min_credit_param, max_credit_param)
     min_credit = 30 if min_credit_param is None else min_credit_param
     max_credit = 42 if max_credit_param is None else max_credit_param
 
-    _generate_programs(0, [], requirements, courses, min_credit, max_credit, possible_programs)
+    _generate_programs(0, [], requirements, courses, min_credit, max_credit, possible_programs, cancel_event)
     return possible_programs

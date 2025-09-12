@@ -5,13 +5,15 @@ from src.program_generator import generate_programs
 from src.config import Config
 import os
 
-def run_program_generation(config_obj):
+
+def run_program_generation(config_obj, cancel_event=None):
     """
     Main logic for generating and listing programs.
     This function is designed to be called from the GUI or other scripts.
 
     Args:
         config_obj (Config): A fully updated Config object.
+        cancel_event (threading.Event, optional): Event to signal cancellation.
 
     Returns:
         tuple: (list of program dicts, log string, path of the auto-saved file)
@@ -56,7 +58,10 @@ def run_program_generation(config_obj):
 
     if not cache_hit:
         output_str += "Generating possible programs... (This may take a while)\n"
-        possible_programs = generate_programs(requirements, courses, min_credit, max_credit)
+        possible_programs = generate_programs(requirements, courses, min_credit, max_credit, cancel_event)
+        if cancel_event and cancel_event.is_set():
+            return [], "Generation was cancelled.", None
+
         output_str += f"Found {len(possible_programs)} possible programs.\n"
         if config_obj.output["cache"]["enabled"]:
             output_str += f"Saving programs to cache file '{os.path.basename(programs_file)}'...\n"
@@ -75,7 +80,8 @@ def run_program_generation(config_obj):
         limit_results=config_obj.display_params["limit_results"],
         filter_description=config_obj.filter_description,
         sort_description=config_obj.display_params["sort_key"],
-        sort_reverse=config_obj.display_params["sort_reverse"]
+        sort_reverse=config_obj.display_params["sort_reverse"],
+        cancel_event=cancel_event
     )
 
     auto_save_path = config_obj.output["report"]["filepath"]

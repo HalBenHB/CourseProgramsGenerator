@@ -67,7 +67,7 @@ class Config:
         }
 
         self.display_params = {
-            "limit_results": kwargs.get('limit_results', 5),
+            "limit_results": kwargs.get('limit_results', None),
             "include_schedule": True,
             "sort_key": kwargs.get('sort_key', "total_days"),
             "sort_reverse": kwargs.get('sort_reverse', False),

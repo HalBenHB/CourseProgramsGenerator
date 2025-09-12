@@ -18,11 +18,12 @@ class Screen3(ttk.Frame):
         self.controller = controller
         self.generation_thread = None
         self.last_auto_save_path = None
+        self.cancel_event = threading.Event()
         ttk.Label(self, text="Final Configuration & Generation", font=("Helvetica", 16)).pack(pady=10)
         help_texts = {
             "credits": "Set the desired range for total ECTS credits in a program.\nLeave empty to use defaults (30-42).",
             "limit": "The maximum number of valid programs to display.\nLeave empty for NO LIMIT.",
-            "sort": "How to sort the final list. Use Python dictionary syntax.\nExample: total_days, total_credits, total_hours, __len__",
+            "sort": "How to sort the final list. Enter a key name.\nExample: total_days, total_credits, total_hours, total_courses",
             "cache": "If checked, the app will load pre-calculated programs if the\ncourse list, requirements, and credit limits haven't changed,\nsaving significant time. Uncheck to force a new calculation.",
             "day_cond": "Filter by the number of days with classes. Comma-separated.\nExample: <5",
             "exclude": "Programs with ANY of these courses will be removed. Comma-separated.\nExample: CS 447.A, ACC 201.A",
@@ -78,8 +79,11 @@ class Screen3(ttk.Frame):
         filter_frame = ttk.LabelFrame(self, text="Filtering")
         filter_frame.pack(fill="x", padx=5, pady=5)
         filter_frame.columnconfigure(1, weight=1)
+
         self.filter_vars = {"day_cond": tk.StringVar(), "exclude": tk.StringVar(), "include": tk.StringVar(),
                             "must": tk.StringVar()}
+
+
         row_map = [("Day Conditions:", "day_cond"), ("Exclude Courses:", "exclude"),
                    ("Include At Least One:", "include"), ("Must Have Courses:", "must")]
         for i, (label_text, key) in enumerate(row_map):
@@ -93,10 +97,19 @@ class Screen3(ttk.Frame):
         bottom_frame = ttk.Frame(self)
         bottom_frame.pack(fill="x", pady=10)
         ttk.Button(bottom_frame, text="Back", command=lambda: controller.show_screen2()).pack(side="left")
-        self.generate_btn = ttk.Button(bottom_frame, text="GENERATE PROGRAMS", command=self.start_generation_thread)
+
+        # --- MODIFIED: Pack generate and cancel buttons in a sub-frame for alignment ---
+        button_container = ttk.Frame(bottom_frame)
+        button_container.pack(side="right")
+
+        self.generate_btn = ttk.Button(button_container, text="GENERATE PROGRAMS", command=self.start_generation_thread)
         self.generate_btn.pack(side="right")
-        self.save_output_btn = ttk.Button(bottom_frame, text="Save Output As...", command=self.save_output,
-                                          state="disabled")
+
+        # --- NEW: Add the Cancel button, initially hidden ---
+        self.cancel_btn = ttk.Button(button_container, text="Cancel", command=self.cancel_generation, state="disabled")
+        self.cancel_btn.pack(side="right", padx=(0, 5))
+
+        self.save_output_btn = ttk.Button(bottom_frame, text="Save Output As...", command=self.save_output, state="disabled")
         self.save_output_btn.pack(side="right", padx=10)
         log_frame = ttk.LabelFrame(self, text="Output Log")
         log_frame.pack(fill="both", expand=True, padx=5, pady=5)
@@ -135,16 +148,30 @@ class Screen3(ttk.Frame):
                 messagebox.showerror("Error", f"Failed to copy file: {e}")
 
     def start_generation_thread(self):
+        self.cancel_event.clear()  # Reset the event for a new run
         self.generate_btn.config(state="disabled", text="Generating...")
+        self.cancel_btn.config(state="normal") # Show the cancel button
         self.save_output_btn.config(state="disabled")
+
         self.last_auto_save_path = None
         self.output_text.configure(state='normal')
         self.output_text.delete(1.0, tk.END)
         self.output_text.configure(state='disabled')
+
         self.queue = queue.Queue()
-        self.generation_thread = threading.Thread(target=self.run_generation_worker, daemon=True)
+        # --- MODIFIED: Pass the cancel_event to the worker thread ---
+        self.generation_thread = threading.Thread(
+            target=self.run_generation_worker,
+            args=(self.cancel_event,),  # Pass the event as an argument
+            daemon=True
+        )
         self.generation_thread.start()
         self.after(100, self.check_queue)
+
+    def cancel_generation(self):
+        print("\n--- CANCELLATION REQUESTED ---")
+        self.cancel_event.set() # Signal the worker thread to stop
+        self.cancel_btn.config(state="disabled", text="Cancelling...")
 
     def check_queue(self):
         try:
@@ -157,13 +184,17 @@ class Screen3(ttk.Frame):
                     self.last_auto_save_path = auto_save_path
                     self.save_output_btn.config(state="normal")
                 print(result_text)
+            elif isinstance(result, str) and result == "CANCELLED":
+                print("\n--- GENERATION CANCELLED BY USER ---")
             else:
                 print(result)
             self.generate_btn.config(state="normal", text="GENERATE PROGRAMS")
+            self.cancel_btn.config(state="disabled", text="Cancel") # Reset cancel button
+
         except queue.Empty:
             self.after(100, self.check_queue)
 
-    def run_generation_worker(self):
+    def run_generation_worker(self, cancel_event):
         try:
             config_obj = self.controller.config
             # ... set min/max credit
@@ -191,8 +222,12 @@ class Screen3(ttk.Frame):
             cache_filepath = self._generate_cache_filename()
             config_obj.input["cache"]["filepath"] = cache_filepath
             print("Configuration updated. Starting generation process...\n")
-            summarized_programs, results_output, auto_save_path = run_program_generation(config_obj)
-            self.queue.put((summarized_programs, results_output, auto_save_path))
+            summarized_programs, results_output, auto_save_path = run_program_generation(config_obj, cancel_event)
+            if cancel_event.is_set():
+                self.queue.put("CANCELLED")
+            else:
+                self.queue.put((summarized_programs, results_output, auto_save_path))
+
         except ValueError:
             self.queue.put(
                 ("\n--- AN ERROR OCCURRED ---\nError: Please ensure Min/Max Credits and Limit Programs are valid numbers.",))

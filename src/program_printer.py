@@ -96,10 +96,13 @@ def format_calendar_grid(calendar_grid, day_order, time_slots_display):
 
 def list_programs(programs, courses, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None,
                   save_txt=None, include_schedule=None, limit_results=None, filter_description=None,
-                  sort_description=None, sort_reverse=False):
+                  sort_description=None, sort_reverse=False, cancel_event=None):
 
     # --- CHANGE 1: Initialize an empty LIST, not a string ---
     output_parts = []
+
+    if cancel_event and cancel_event.is_set():
+        return [], ""
 
     summarized_programs = programs
     if filter_function:
@@ -107,6 +110,10 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
         if print_wanted or save_txt:
             output_parts.append("Filter functions: " + filter_description + "\n")
             print(f"Filtered. Remained {len(summarized_programs)} programs")
+
+    # --- NEW: Check for cancellation before sorting ---
+    if cancel_event and cancel_event.is_set():
+        return [], ""
 
     if sort_function:
         summarized_programs = sorted(summarized_programs, key=sort_function, reverse=sort_reverse)
@@ -123,6 +130,17 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
             output_parts.append(f"Displaying top {min(limit_results, total_to_process)}:\n")
 
         for i, program in enumerate(programs_to_print):
+            if cancel_event and cancel_event.is_set():
+                print("\nFormatting cancelled.")
+                # Return what we have formatted so far
+                final_output_text = "".join(output_parts)
+                # Since we are returning partial results, don't save the incomplete file
+                if save_txt:
+                    print(f"File not saved to '{save_txt}' due to cancellation.")
+                if return_wanted:
+                    return summarized_programs, final_output_text
+                return None, None
+
             program["program_index"] = i + 1
             program_output = format_program_info(program, courses, include_schedule)
 
