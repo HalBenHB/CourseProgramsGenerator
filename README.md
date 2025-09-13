@@ -1,4 +1,4 @@
-# Course Program Generator
+# Course Schedule Generator
 
 [English](#english) | [Türkçe Versiyon İçin Tıklayınız](#türkçe)
 
@@ -9,7 +9,7 @@ An intelligent desktop application designed to automate the creation of conflict
 ---
 
 <a name="english"></a>
-## 🇬🇧 Course Program Generator (English)
+## 🇬🇧 Course Schedule Generator (English)
 
 This application solves the complex and tedious task of manual course scheduling. It takes a list of all offered courses and a customizable set of student-defined requirements, then uses a powerful backtracking algorithm to generate every possible valid, conflict-free program.
 
@@ -47,13 +47,13 @@ You do not need Python or any other tools installed to run this application.
 2.  Download the correct `.zip` file for your operating system (`Windows` or `macOS`).
 
 #### For Windows:
-1.  Unzip the downloaded folder (e.g., `Course-Program-Generator-v2.0-Windows.zip`).
-2.  Open the unzipped folder and double-click **`Course Program Generator.exe`** to run.
+1.  Unzip the downloaded folder (e.g., `Course-Schedule-Generator-v2.0-Windows.zip`).
+2.  Open the unzipped folder and double-click **`Course Schedule Generator.exe`** to run.
 3.  Windows may show a "Windows Protected your PC" security warning. This is normal. Click **"More info"**, then click **"Run anyway"**.
 
 #### For macOS:
-1.  Unzip the downloaded file. This will give you the `Course Program Generator.app`.
-2.  Drag **`Course Program Generator.app`** into your **Applications** folder.
+1.  Unzip the downloaded file. This will give you the `Course Schedule Generator.app`.
+2.  Drag **`Course Schedule Generator.app`** into your **Applications** folder.
 3.  The first time you run it, you may need to **right-click** the app icon and select **"Open"** to approve the security exception.
 
 ### 🚀 How to Use
@@ -81,7 +81,7 @@ If you want to run the application from the source code:
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-    cd CourseProgramsGenerator
+    cd CourseScheduleGenerator
     ```
 
 2.  **Create and activate a virtual environment:**
@@ -127,7 +127,7 @@ This project is licensed under the MIT License.
 ---
 
 <a name="türkçe"></a>
-## 🇹🇷 Course Program Generator (Türkçe)
+## 🇹🇷 Ders Programı Oluşturucu (Türkçe)
 
 Bu uygulama, elle ders programı hazırlamanın karmaşık ve sıkıcı sürecini otomatize eder. Özyeğin Üniversitesi'nin açtığı tüm derslerin bir listesini ve öğrenci tarafından özelleştirilebilen gereksinimleri alarak, olası tüm geçerli ve çakışmasız programları oluşturmak için güçlü bir geri izleme (backtracking) algoritması kullanır.
 
@@ -165,13 +165,13 @@ Bu uygulamayı çalıştırmak için bilgisayarınızda Python veya başka bir a
 2.  İşletim sisteminize uygun `.zip` dosyasını indirin (`Windows` veya `macOS`).
 
 #### Windows Kullanıcıları İçin:
-1.  İndirilen klasörü bir konuma çıkartın (örneğin, `Course-Program-Generator-v2.0-Windows.zip`).
-2.  Çıkartılan klasörü açın ve çalıştırmak için **`Course Program Generator.exe`** dosyasına çift tıklayın.
+1.  İndirilen klasörü bir konuma çıkartın (örneğin, `Course-Schedule-Generator-v2.0-Windows.zip`).
+2.  Çıkartılan klasörü açın ve çalıştırmak için **`Course Schedule Generator.exe`** dosyasına çift tıklayın.
 3.  Windows bir "Windows bilgisayarınızı korudu" güvenlik uyarısı gösterebilir. Bu normaldir. **"Ek bilgi"** seçeneğine, ardından **"Yine de çalıştır"** düğmesine tıklayın.
 
 #### macOS Kullanıcıları İçin:
-1.  İndirilen dosyayı arşivden çıkarın. Bu size `Course Program Generator.app` uygulamasını verecektir.
-2.  **`Course Program Generator.app`** dosyasını **Uygulamalar (Applications)** klasörünüze sürükleyin.
+1.  İndirilen dosyayı arşivden çıkarın. Bu size `Course Schedule Generator.app` uygulamasını verecektir.
+2.  **`Course Schedule Generator.app`** dosyasını **Uygulamalar (Applications)** klasörünüze sürükleyin.
 3.  Uygulamayı ilk kez çalıştırdığınızda, güvenlik istisnasını onaylamak için uygulama simgesine **sağ tıklayıp "Aç"** demeniz gerekebilir.
 
 ### 🚀 Nasıl Kullanılır
@@ -199,7 +199,7 @@ Uygulamayı kaynak kodundan çalıştırmak isterseniz:
 1.  **Projeyi klonlayın:**
     ```bash
     git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-    cd CourseProgramsGenerator
+    cd CourseScheduleGenerator
     ```
 
 2.  **Bir sanal ortam oluşturun ve etkinleştirin:**

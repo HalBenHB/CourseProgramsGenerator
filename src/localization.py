@@ -5,7 +5,7 @@ class LocalizationManager:
         self.language_data = {
             'en': {
                 # App & Global
-                'app_title': "Course Program Generator",
+                'app_title': "Course Schedule Generator",
                 'browse': "Browse...",
                 'back': "Back",
                 'error': "Error",
