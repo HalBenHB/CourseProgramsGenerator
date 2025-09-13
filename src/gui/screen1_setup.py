@@ -28,6 +28,22 @@ class Screen1(ttk.Frame):
         self.load_button = ttk.Button(self, command=self.load_courses)
         self.load_button.pack(pady=20)
 
+        # --- NEW: Cache Management Section ---
+        self.cache_frame = ttk.LabelFrame(self)
+        self.cache_frame.pack(pady=20, padx=20, fill='x')
+
+        self.clear_cache_var = tk.BooleanVar(value=True)
+        self.clear_outputs_var = tk.BooleanVar(value=True)
+
+        self.clear_cache_check = ttk.Checkbutton(self.cache_frame, variable=self.clear_cache_var)
+        self.clear_cache_check.pack(anchor='w', padx=10)
+
+        self.clear_outputs_check = ttk.Checkbutton(self.cache_frame, variable=self.clear_outputs_var)
+        self.clear_outputs_check.pack(anchor='w', padx=10)
+
+        self.clear_button = ttk.Button(self.cache_frame, command=self.clear_cache_files)
+        self.clear_button.pack(pady=10)
+
         # Set initial text
         self.update_text()
 
@@ -37,6 +53,57 @@ class Screen1(ttk.Frame):
         self.select_file_label.config(text=self.loc.get_string('screen1_select_file'))
         self.browse_button.config(text=self.loc.get_string('browse'))
         self.load_button.config(text=self.loc.get_string('load_and_continue'))
+
+        # Update new cache management widgets
+        self.cache_frame.config(text=self.loc.get_string('cache_mgmt_label'))
+        self.clear_cache_check.config(text=self.loc.get_string('clear_program_cache_label'))
+        self.clear_outputs_check.config(text=self.loc.get_string('clear_saved_outputs_label'))
+        self.clear_button.config(text=self.loc.get_string('clear_cache_btn'))
+
+    def clear_cache_files(self):
+        """Deletes selected cache and output files after user confirmation."""
+        clear_caches = self.clear_cache_var.get()
+        clear_outputs = self.clear_outputs_var.get()
+
+        if not clear_caches and not clear_outputs:
+            messagebox.showinfo(self.loc.get_string('info'), self.loc.get_string('nothing_to_clear_msg'))
+            return
+
+        # Confirm with the user before deleting files
+        if not messagebox.askyesno(self.loc.get_string('confirm_clear_title'), self.loc.get_string('confirm_clear_msg')):
+            return
+
+        cleared_items = []
+
+        # Clear Program Caches (.pkl)
+        if clear_caches:
+            cache_dir = self.controller.config.paths["cache_dir"]
+            try:
+                if os.path.exists(cache_dir):
+                    for filename in os.listdir(cache_dir):
+                        file_path = os.path.join(cache_dir, filename)
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                    cleared_items.append(self.loc.get_string('cleared_caches_item'))
+            except Exception as e:
+                messagebox.showerror(self.loc.get_string('error'), f"Could not clear program cache:\n{e}")
+
+        # Clear Saved Outputs (.txt)
+        if clear_outputs:
+            output_dir = self.controller.config.paths["output_dir"]
+            try:
+                if os.path.exists(output_dir):
+                    for filename in os.listdir(output_dir):
+                        file_path = os.path.join(output_dir, filename)
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+                    cleared_items.append(self.loc.get_string('cleared_outputs_item'))
+            except Exception as e:
+                messagebox.showerror(self.loc.get_string('error'), f"Could not clear saved outputs:\n{e}")
+
+        # Report success
+        if cleared_items:
+            messagebox.showinfo("Success", self.loc.get_string('clear_success_msg', cleared_items='\n'.join(cleared_items)))
 
     def browse_file(self):
         initial_dir = os.path.dirname(self.controller.config.input["courses"]["filepath"] or ".")

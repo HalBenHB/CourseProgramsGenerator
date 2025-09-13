@@ -156,6 +156,19 @@ class LocalizationManager:
                 'day_fri_short': "Fr",
                 'day_sat_short': "Sa",
                 'day_sun_short': "Su",
+
+                # --- NEW: Cache Management ---
+                'cache_mgmt_label': "Cache Management",
+                'clear_program_cache_label': "Clear Program Cache (.pkl)",
+                'clear_saved_outputs_label': "Clear Saved Outputs (.txt)",
+                'clear_cache_btn': "Clear Selected Files",
+                'confirm_clear_title': "Confirm Deletion",
+                'confirm_clear_msg': "Are you sure you want to permanently delete the selected files?\n\nThis action cannot be undone.",
+                'clear_success_msg': "Successfully cleared:\n{cleared_items}",
+                'nothing_to_clear_msg': "No items were selected to clear.",
+                'cleared_caches_item': "- Program Caches",
+                'cleared_outputs_item': "- Saved Outputs",
+
             },
             'tr': {
                 # App & Global
@@ -310,6 +323,19 @@ class LocalizationManager:
                 'day_fri_short': "Cu",
                 'day_sat_short': "Ct",
                 'day_sun_short': "Pa",
+
+                # --- NEW: Cache Management ---
+                'cache_mgmt_label': "Önbellek Yönetimi",
+                'clear_program_cache_label': "Program Önbelleğini Temizle (.pkl)",
+                'clear_saved_outputs_label': "Kaydedilmiş Çıktıları Temizle (.txt)",
+                'clear_cache_btn': "Seçilenleri Temizle",
+                'confirm_clear_title': "Silmeyi Onayla",
+                'confirm_clear_msg': "Seçili dosyaları kalıcı olarak silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz.",
+                'clear_success_msg': "Başarıyla temizlendi:\n{cleared_items}",
+                'nothing_to_clear_msg': "Temizlenecek öğe seçilmedi.",
+                'cleared_caches_item': "- Program Önbellekleri",
+                'cleared_outputs_item': "- Kaydedilmiş Çıktılar",
+
             },
         }
         self.current_language = initial_language
