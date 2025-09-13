@@ -71,6 +71,7 @@ def run_program_generation(config_obj, cancel_event=None):
     summarized_programs, formatted_output = list_programs(
         programs=possible_programs,
         courses=courses,
+        loc_manager=config_obj.loc,
         filter_function=config_obj.filter_function,
         sort_function=config_obj.sort_function,
         print_wanted=False,

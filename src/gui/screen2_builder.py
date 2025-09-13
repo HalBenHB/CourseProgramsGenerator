@@ -1,3 +1,5 @@
+# src/gui/screen2_builder.py
+
 import os
 import json
 import tkinter as tk
@@ -9,133 +11,71 @@ class Screen2(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+        self.loc = controller.loc
         self.currently_editing_req_index = None
         self.double_click_locked = False
-        self.PREDEFINED_REQS = {
-            "BABUS Özelleşilen Alan Seçmeli": {
-				"category": "Business Administration",
-                "folder": "BABUS",
-                "file": "BABUS Özelleşilen Alan Seçmeli.xls",
-                "needed": "<=3"
-            },
-            "BABUS Serbest Seçmeli": {
-				"category": "Business Administration",
-                "folder": "BABUS",
-                "file": "BABUS Serbest Seçmeli.xls",
-                "needed": "<=4"
-            },
-            "BABUS Program İçin Seçmeli (FIN)": {
-				"category": "Business Administration",
-                "folder": "BABUS",
-                "file": "BABUS Program İçin Seçmeli (FIN).xls",
-                "needed": "<=1"
-            },
-            "BABUS Program İçin Seçmeli (MGMT)": {
-				"category": "Business Administration",
-                "folder": "BABUS",
-                "file": "BABUS Program İçin Seçmeli (MGMT).xls",
-                "needed": "<=1"
-            },
-            "BABUS Program İçin Seçmeli (MIS)": {
-				"category": "Business Administration",
-                "folder": "BABUS",
-                "file": "BABUS Program İçin Seçmeli (MIS).xls",
-                "needed": "<=1"
-            },
-            "BABUS Program İçin Seçmeli (MKTG)": {
-				"category": "Business Administration",
-                "folder": "BABUS",
-                "file": "BABUS Program İçin Seçmeli (MKTG).xls",
-                "needed": "<=1"
-            },
-            "BABUS Program İçin Seçmeli (OPER)": {
-				"category": "Business Administration",
-                "folder": "BABUS",
-                "file": "BABUS Program İçin Seçmeli (OPER).xls",
-                "needed": "<=1"
-            },
-            "BSCS Program İçi Seçmeli": {
-				"category": "Computer Science",
-                "folder": "BSCS",
-                "file": "BSCS Program İçi Seçmeli.xls",
-                "needed": "<=3"
-            },
-            "BSCS FE Sosyal Bilimler Seçmeli": {
-				"category": "Computer Science",
-                "folder": "BSCS",
-                "file": "BSCS FE Sosyal Bilimler Seçmeli.xls",
-                "needed": "<=1"
-            },
-            "BSCS FE Sertifika Seçmeli": {
-				"category": "Computer Science",
-                "folder": "BSCS",
-                "file": "BSCS FE Sertifika Seçmeli.xls",
-                "needed": "<=2"
-            },
-            "BSCS FE Serbest Seçmeli": {
-				"category": "Computer Science",
-                "folder": "BSCS",
-                "file": "BSCS FE Serbest Seçmeli.xls",
-                "needed": "<=3"
-            },
-            "TLL 101 Offered Branches": {
-				"category": "General",
-                "folder": "General",
-                "file": "TLL101.xls",
-                "needed": "=1"
-            },
-            "TLL 102 Offered Branches": {
-				"category": "General",
-                "folder": "General",
-                "file": "TLL102.xls",
-                "needed": "=1"
-            },
-            "ENG 101 Offered Branches": {
-				"category": "General",
-                "folder": "General",
-                "file": "ENG101.xls",
-                "needed": "=1"
-            },
-            "ENG 102 Offered Branches": {
-				"category": "General",
-                "folder": "General",
-                "file": "ENG102.xls",
-                "needed": "=1"
-            },
-            "HIST 201 Offered Branches": {
-				"category": "General",
-                "folder": "General",
-                "file": "HIST201.xls",
-                "needed": "=1"
-            },
-            "HIST 202 Offered Branches": {
-				"category": "General",
-                "folder": "General",
-                "file": "HIST202.xls",
-                "needed": "=1"
-            }
+
+        # --- CORRECTED: The name of the dictionary ---
+        self.PREDEFINED_REQS_KEYS = {
+            "babus_area_elective": {"category": "Business Administration", "folder": "BABUS",
+                                    "file": "BABUS Özelleşilen Alan Seçmeli.xls", "needed": "<=3"},
+            "babus_free_elective": {"category": "Business Administration", "folder": "BABUS",
+                                    "file": "BABUS Serbest Seçmeli.xls", "needed": "<=4"},
+            "babus_fin_elective": {"category": "Business Administration", "folder": "BABUS",
+                                   "file": "BABUS Program İçin Seçmeli (FIN).xls", "needed": "<=1"},
+            "babus_mgmt_elective": {"category": "Business Administration", "folder": "BABUS",
+                                    "file": "BABUS Program İçin Seçmeli (MGMT).xls", "needed": "<=1"},
+            "babus_mis_elective": {"category": "Business Administration", "folder": "BABUS",
+                                   "file": "BABUS Program İçin Seçmeli (MIS).xls", "needed": "<=1"},
+            "babus_mktg_elective": {"category": "Business Administration", "folder": "BABUS",
+                                    "file": "BABUS Program İçin Seçmeli (MKTG).xls", "needed": "<=1"},
+            "babus_oper_elective": {"category": "Business Administration", "folder": "BABUS",
+                                    "file": "BABUS Program İçin Seçmeli (OPER).xls", "needed": "<=1"},
+            "bscs_program_elective": {"category": "Computer Science", "folder": "BSCS",
+                                      "file": "BSCS Program İçi Seçmeli.xls", "needed": "<=3"},
+            "bscs_ss_elective": {"category": "Computer Science", "folder": "BSCS",
+                                 "file": "BSCS FE Sosyal Bilimler Seçmeli.xls", "needed": "<=1"},
+            "bscs_cert_elective": {"category": "Computer Science", "folder": "BSCS",
+                                   "file": "BSCS FE Sertifika Seçmeli.xls", "needed": "<=2"},
+            "bscs_free_elective": {"category": "Computer Science", "folder": "BSCS",
+                                   "file": "BSCS FE Serbest Seçmeli.xls", "needed": "<=3"},
+            "tll101": {"category": "General", "folder": "General", "file": "TLL101.xls", "needed": "=1"},
+            "tll102": {"category": "General", "folder": "General", "file": "TLL102.xls", "needed": "=1"},
+            "eng101": {"category": "General", "folder": "General", "file": "ENG101.xls", "needed": "=1"},
+            "eng102": {"category": "General", "folder": "General", "file": "ENG102.xls", "needed": "=1"},
+            "hist201": {"category": "General", "folder": "General", "file": "HIST201.xls", "needed": "=1"},
+            "hist202": {"category": "General", "folder": "General", "file": "HIST202.xls", "needed": "=1"},
         }
-        ttk.Label(self, text="Requirement Builder", font=("Helvetica", 16)).pack(pady=10, fill="x")
+
+        # --- WIDGET CREATION (without text) ---
+        self.title_label = ttk.Label(self, font=("Helvetica", 16))
+        self.title_label.pack(pady=10, fill="x")
+
         main_pane = tk.PanedWindow(self, orient=tk.HORIZONTAL, sashrelief=tk.RAISED)
         main_pane.pack(fill="both", expand=True)
-        courses_frame = ttk.LabelFrame(main_pane, text="Available Courses (Double-click to add)")
-        main_pane.add(courses_frame, width=250)
+
+        self.courses_frame = ttk.LabelFrame(main_pane)
+        main_pane.add(self.courses_frame, width=250)
         self.search_var = tk.StringVar()
         self.search_var.trace_add("write", lambda *args: self.filter_courses())
-        ttk.Entry(courses_frame, textvariable=self.search_var).pack(fill="x", padx=5, pady=5)
-        self.course_listbox = tk.Listbox(courses_frame, selectmode="extended", exportselection=False)
+        ttk.Entry(self.courses_frame, textvariable=self.search_var).pack(fill="x", padx=5, pady=5)
+        self.course_listbox = tk.Listbox(self.courses_frame, selectmode="extended", exportselection=False)
         self.course_listbox.pack(fill="both", expand=True, padx=5, pady=5)
         self.course_listbox.bind('<Double-1>', self.add_course_to_requirement)
-        editor_frame = ttk.LabelFrame(main_pane, text="Edit Selected Requirement")
+
+        editor_frame = ttk.LabelFrame(main_pane)
         main_pane.add(editor_frame, width=350)
-        ttk.Label(editor_frame, text="Requirement Name:").pack(fill="x", padx=5, pady=(5, 0))
+        self.editor_frame_label = editor_frame  # To change its text
+        self.req_name_label = ttk.Label(editor_frame)
+        self.req_name_label.pack(fill="x", padx=5, pady=(5, 0))
         self.editor_name_var = tk.StringVar()
         self.editor_name_var.trace_add("write", self.update_requirement_from_editor)
         self.editor_name_entry = ttk.Entry(editor_frame, textvariable=self.editor_name_var)
         self.editor_name_entry.pack(fill="x", padx=5, pady=2)
         needed_frame = ttk.Frame(editor_frame)
         needed_frame.pack(fill="x", padx=5, pady=5)
-        ttk.Label(needed_frame, text="Needed:").pack(side="left")
+        self.needed_label = ttk.Label(needed_frame)
+        self.needed_label.pack(side="left")
         self.editor_needed_op_var = tk.StringVar()
         self.editor_needed_op_var.trace_add("write", self.update_requirement_from_editor)
         self.editor_needed_op_combo = ttk.Combobox(needed_frame, textvariable=self.editor_needed_op_var,
@@ -147,75 +87,118 @@ class Screen2(ttk.Frame):
         self.editor_needed_num_entry.pack(side="left")
         add_remove_frame = ttk.Frame(editor_frame)
         add_remove_frame.pack(pady=5, fill="x")
-        ttk.Button(add_remove_frame, text="-> Add Selected", command=self.add_course_to_requirement).pack(pady=2,
-                                                                                                          padx=20)
-        ttk.Button(add_remove_frame, text="<- Remove Selected", command=self.remove_course_from_requirement).pack(
-            pady=2, padx=20)
-        ttk.Label(editor_frame, text="Candidate Courses:").pack(fill="x", padx=5)
+        self.add_course_btn = ttk.Button(add_remove_frame, command=self.add_course_to_requirement)
+        self.add_course_btn.pack(pady=2, padx=20)
+        self.remove_course_btn = ttk.Button(add_remove_frame, command=self.remove_course_from_requirement)
+        self.remove_course_btn.pack(pady=2, padx=20)
+        self.candidate_courses_label = ttk.Label(editor_frame)
+        self.candidate_courses_label.pack(fill="x", padx=5)
         self.editor_candidates_listbox = tk.Listbox(editor_frame, selectmode="extended", exportselection=False)
         self.editor_candidates_listbox.pack(fill="both", expand=True, padx=5, pady=5)
-        req_list_frame = ttk.LabelFrame(main_pane, text="Program Requirements")
+
+        req_list_frame = ttk.LabelFrame(main_pane)
         main_pane.add(req_list_frame, width=300)
+        self.req_list_frame_label = req_list_frame
         self.req_listbox = tk.Listbox(req_list_frame, exportselection=False)
         self.req_listbox.pack(fill="both", expand=True, padx=5, pady=5)
         self.req_listbox.bind('<<ListboxSelect>>', self.on_req_select)
         req_btn_frame = ttk.Frame(req_list_frame)
         req_btn_frame.pack(fill="x", pady=5)
-        ttk.Button(req_btn_frame, text="New Blank Requirement", command=self.create_new_requirement).pack(side="left",
-                                                                                                          expand=True,
-                                                                                                          fill="x",
-                                                                                                          padx=5)
-        ttk.Button(req_btn_frame, text="Delete Selected", command=self.delete_selected_requirement).pack(side="left",
-                                                                                                         expand=True,
-                                                                                                         fill="x",
-                                                                                                         padx=5)
-        adder_frame = ttk.LabelFrame(req_list_frame, text="Quick Add Requirement")
+        self.new_req_btn = ttk.Button(req_btn_frame, command=self.create_new_requirement)
+        self.new_req_btn.pack(side="left", expand=True, fill="x", padx=5)
+        self.delete_req_btn = ttk.Button(req_btn_frame, command=self.delete_selected_requirement)
+        self.delete_req_btn.pack(side="left", expand=True, fill="x", padx=5)
+
+        adder_frame = ttk.LabelFrame(req_list_frame)
         adder_frame.pack(fill="x", padx=5, pady=10)
-        self.req_tree = ttk.Treeview(adder_frame, show="tree", height=8) # 'show="tree"' hides the ugly "#0" column
+        self.adder_frame_label = adder_frame
+        self.req_tree = ttk.Treeview(adder_frame, show="tree", height=8)
         self.req_tree.pack(fill="x", expand=True, padx=5, pady=5)
-        # Populate the Treeview with our structured data
-        categories = {}
-        for name, data in self.PREDEFINED_REQS.items():
-            cat_name = data["category"]
-            if cat_name not in categories:
-                # Insert the category as a top-level item (a parent)
-                categories[cat_name] = self.req_tree.insert("", "end", text=cat_name, open=True)
-
-            # Insert the requirement as a child of its category
-            self.req_tree.insert(categories[cat_name], "end", text=name, values=(name,))
-
-        # Add the "Custom File" option at the end
-        self.req_tree.insert("", "end", text="Add from Custom File...", values=("Add from Custom File...",))
-
-        # Make the category headings unselectable
-        for cat_id in categories.values():
-            self.req_tree.item(cat_id, tags=('category',))
-        self.req_tree.tag_configure('category', foreground='gray')  # Style the headings
         self.req_tree.bind('<<TreeviewSelect>>', self.on_tree_select)
         self.req_tree.bind('<Double-1>', self.on_tree_double_click)
+        self.add_template_btn = ttk.Button(adder_frame, command=self.add_requirement_from_template)
+        self.add_template_btn.pack(pady=5)
 
-        ttk.Button(adder_frame, text="Add", command=self.add_requirement_from_template).pack(pady=5)
         bottom_frame = ttk.Frame(self)
         bottom_frame.pack(fill="x", pady=10, side="bottom")
-        ttk.Button(bottom_frame, text="Back", command=lambda: controller.show_screen1()).pack(side="left")
-        ttk.Button(bottom_frame, text="Continue to Final Configuration", command=self.continue_to_screen3).pack(
-            side="right")
-        ttk.Button(bottom_frame, text="Save to JSON", command=self.save_reqs).pack(side="right", padx=10)
-        ttk.Button(bottom_frame, text="Load Last Session", command=self.load_last_session).pack(side="right", padx=10)
-        ttk.Button(bottom_frame, text="Load from JSON", command=lambda: self.load_reqs()).pack(side="right")
+        self.back_btn = ttk.Button(bottom_frame, command=lambda: controller.show_screen1())
+        self.back_btn.pack(side="left")
+        self.continue_btn = ttk.Button(bottom_frame, command=self.continue_to_screen3)
+        self.continue_btn.pack(side="right")
+        self.save_json_btn = ttk.Button(bottom_frame, command=self.save_reqs)
+        self.save_json_btn.pack(side="right", padx=10)
+        self.load_last_btn = ttk.Button(bottom_frame, command=self.load_last_session)
+        self.load_last_btn.pack(side="right", padx=10)
+        self.load_json_btn = ttk.Button(bottom_frame, command=lambda: self.load_reqs())
+        self.load_json_btn.pack(side="right")
+
+        self.update_text()
         self.update_editor_panel_state()
 
+    def update_text(self):
+        """Update all text elements on this screen to the current language."""
+        loc = self.loc
+        self.title_label.config(text=loc.get_string('screen2_title'))
+        self.courses_frame.config(text=loc.get_string('available_courses_label'))
+        self.editor_frame_label.config(text=loc.get_string('edit_req_label'))
+        self.req_name_label.config(text=loc.get_string('req_name_label'))
+        self.needed_label.config(text=loc.get_string('needed_label'))
+        self.add_course_btn.config(text=loc.get_string('add_selected_btn'))
+        self.remove_course_btn.config(text=loc.get_string('remove_selected_btn'))
+        self.candidate_courses_label.config(text=loc.get_string('candidate_courses_label'))
+        self.req_list_frame_label.config(text=loc.get_string('program_reqs_label'))
+        self.new_req_btn.config(text=loc.get_string('new_blank_req_btn'))
+        self.delete_req_btn.config(text=loc.get_string('delete_selected_btn'))
+        self.adder_frame_label.config(text=loc.get_string('quick_add_req_label'))
+        self.add_template_btn.config(text=loc.get_string('add_btn'))
+        self.back_btn.config(text=loc.get_string('back'))
+        self.continue_btn.config(text=loc.get_string('continue_to_config'))
+        self.save_json_btn.config(text=loc.get_string('save_to_json'))
+        self.load_last_btn.config(text=loc.get_string('load_last_session'))
+        self.load_json_btn.config(text=loc.get_string('load_from_json'))
+
+        # --- Rebuild the Treeview with translated names ---
+        for i in self.req_tree.get_children():
+            self.req_tree.delete(i)
+
+        categories = {}
+        # Manually handle category names if they need translation
+        cat_map = {
+            "Business Administration": "Business Administration",
+            "Computer Science": "Computer Science",
+            "General": "General"
+        }
+
+        # *** THIS IS THE CORRECTED LOOP ***
+        for key, data in self.PREDEFINED_REQS_KEYS.items():
+            cat_name = data["category"]
+            if cat_name not in categories:
+                # Use the cat_map for potential future translation of categories themselves
+                categories[cat_name] = self.req_tree.insert("", "end", text=cat_map[cat_name], open=True)
+
+            translated_name = loc.get_string(key)
+            # Store the language-independent KEY in values, but display the translated name
+            self.req_tree.insert(categories[cat_name], "end", text=translated_name, values=(key,))
+
+        # Add the custom file option, using a key
+        self.req_tree.insert("", "end", text=loc.get_string('custom_file_option'), values=("custom_file",))
+
+        for cat_id in categories.values():
+            self.req_tree.item(cat_id, tags=('category',))
+        self.req_tree.tag_configure('category', foreground='gray')
+
+        # Refresh the main requirements listbox to reflect potential name changes
+        self.update_req_listbox()
+
     def add_requirement_from_template(self):
-        # --- MODIFIED: Get selection from Treeview ---
         selected_item = self.req_tree.focus()
         if not selected_item:
-            messagebox.showinfo("Info", "Please select a template from the list first.")
+            messagebox.showinfo(self.loc.get_string('info'), self.loc.get_string('select_template_msg'))
             return
 
-        # The 'values' tuple holds the real name we stored
-        selection = self.req_tree.item(selected_item, "values")[0]
+        selection_key = self.req_tree.item(selected_item, "values")[0]
 
-        if selection == "Add from Custom File...":
+        if selection_key == "custom_file":
             filepath = filedialog.askopenfilename(title="Select Custom Course List File",
                                                   filetypes=(("Excel Files", "*.xls*"), ("All Files", "*.*")))
             if not filepath: return
@@ -223,15 +206,11 @@ class Screen2(ttk.Frame):
             needed = "=1"
             self._create_req_from_file(filepath, req_name, needed)
         else:
-            req_config = self.PREDEFINED_REQS[selection]
-            # --- MODIFIED: Use the new 'folder' key to build the path ---
+            req_config = self.PREDEFINED_REQS_KEYS[selection_key]
             pre_reqs_path = self.controller.config.paths["pre_reqs_dir"]
             filepath = os.path.join(pre_reqs_path, req_config['folder'], req_config['file'])
-
-            # Ensure the subdirectory exists (good practice)
             os.makedirs(os.path.join(pre_reqs_path, req_config['folder']), exist_ok=True)
-
-            req_name = selection
+            req_name = self.loc.get_string(selection_key)
             needed = req_config['needed']
             self._create_req_from_file(filepath, req_name, needed)
 
@@ -332,9 +311,9 @@ class Screen2(ttk.Frame):
 
     def delete_selected_requirement(self):
         if self.currently_editing_req_index is None:
-            messagebox.showwarning("Warning", "Please select a requirement to delete.")
+            messagebox.showwarning(self.loc.get_string('warning'), self.loc.get_string('req_delete_warning'))
             return
-        if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this requirement?"):
+        if messagebox.askyesno(self.loc.get_string('confirm_delete'), self.loc.get_string('confirm_delete_msg')):
             self.controller.requirements.pop(self.currently_editing_req_index)
             self.currently_editing_req_index = None
             self.update_req_listbox()
@@ -343,11 +322,11 @@ class Screen2(ttk.Frame):
 
     def add_course_to_requirement(self, event=None):
         if self.currently_editing_req_index is None:
-            messagebox.showwarning("Action Required", "Please create or select a requirement first.")
+            messagebox.showwarning(self.loc.get_string('warning'), self.loc.get_string('req_add_course_warning'))
             return
         selected_indices = self.course_listbox.curselection()
         if not selected_indices:
-            messagebox.showwarning("Warning", "Please select one or more courses from 'Available Courses'.")
+            messagebox.showwarning(self.loc.get_string('warning'), self.loc.get_string('req_select_courses_warning'))
             return
         req = self.controller.requirements[self.currently_editing_req_index]
         current_candidates = set(req.get('candidates', []))
@@ -361,7 +340,7 @@ class Screen2(ttk.Frame):
         if self.currently_editing_req_index is None: return
         selected_indices = self.editor_candidates_listbox.curselection()
         if not selected_indices:
-            messagebox.showwarning("Warning", "Please select courses from 'Candidate Courses' to remove.")
+            messagebox.showwarning(self.loc.get_string('warning'), self.loc.get_string('req_remove_courses_warning'))
             return
         req = self.controller.requirements[self.currently_editing_req_index]
         courses_to_remove = {self.editor_candidates_listbox.get(i) for i in selected_indices}
@@ -389,7 +368,7 @@ class Screen2(ttk.Frame):
         )
         if path:
             with open(path, 'w') as f: json.dump(self.controller.requirements, f, indent=4)
-            messagebox.showinfo("Success", f"Requirements saved to {os.path.basename(path)}")
+            messagebox.showinfo("Success", self.loc.get_string('reqs_saved_msg', filename=os.path.basename(path)))
 
     def load_reqs(self, path=None):
         if not path:
@@ -412,23 +391,23 @@ class Screen2(ttk.Frame):
                 if self.controller.requirements:
                     self.req_listbox.selection_set(0)
                     self.on_req_select()
-                messagebox.showinfo("Success", f"Loaded {len(self.controller.requirements)} requirements.")
+                messagebox.showinfo("Success",
+                                    self.loc.get_string('reqs_loaded_msg', count=len(self.controller.requirements)))
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load or parse JSON file:\n{e}")
 
     def load_last_session(self):
         temp_req_path = os.path.join(self.controller.config.paths["reqs_dir"], "requirements_gui_temp.json")
         if not os.path.exists(temp_req_path):
-            messagebox.showinfo("Info", "No last session file found to load.")
+            messagebox.showinfo(self.loc.get_string('info'), self.loc.get_string('no_last_session_msg'))
             return
         self.load_reqs(path=temp_req_path)
 
     def continue_to_screen3(self):
         if not self.controller.requirements:
-            messagebox.showerror("Error", "You must create or load at least one requirement.")
+            messagebox.showerror(self.loc.get_string('error'), self.loc.get_string('min_one_req_error'))
             return
-        # Use the requirements from the controller's memory, which is the single source of truth
-        self.controller.config.requirements = self.controller.requirements  # Keep this for now, it's the live edited data
+        self.controller.config.requirements = self.controller.requirements
         temp_req_path = os.path.join(self.controller.config.paths["reqs_dir"], "requirements_gui_temp.json")
         with open(temp_req_path, 'w') as f: json.dump(self.controller.requirements, f)
         self.controller.config.input["requirements"]["basename"] = os.path.basename(temp_req_path)
@@ -438,34 +417,20 @@ class Screen2(ttk.Frame):
         """Prevents the user from selecting the category headings."""
         selected_item = self.req_tree.focus()
         if self.req_tree.tag_has('category', selected_item):
-            # If a category heading is clicked, deselect it
             self.req_tree.selection_remove(selected_item)
 
     def on_tree_double_click(self, event):
         """Adds the double-clicked requirement to the list, with debouncing."""
-
-        # --- DEBOUNCING LOGIC ---
-        # If the action is currently locked, do nothing.
         if self.double_click_locked:
-            print("Debouncing: Ignoring rapid repeat click.")
             return
-
         selected_item_id = self.req_tree.focus()
-
         if not selected_item_id or self.req_tree.tag_has('category', selected_item_id):
             return
-
-        # Lock the action to prevent immediate re-triggering.
         self.double_click_locked = True
-
-        # If it's a valid item, call the existing add function
         self.add_requirement_from_template()
-
-        # Schedule the lock to be released after 500 milliseconds (0.5 seconds).
         DEBOUNCE_DELAY_MS = 500
         self.after(DEBOUNCE_DELAY_MS, self.unlock_double_click)
 
     def unlock_double_click(self):
         """Resets the double-click lock flag."""
         self.double_click_locked = False
-        print("Double-click unlocked.")

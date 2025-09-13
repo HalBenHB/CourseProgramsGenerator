@@ -16,90 +16,72 @@ class Screen3(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+        self.loc = controller.loc
         self.generation_thread = None
         self.last_auto_save_path = None
         self.cancel_event = threading.Event()
-        ttk.Label(self, text="Final Configuration & Generation", font=("Helvetica", 16)).pack(pady=10)
-        help_texts = {
-            "credits": "Set the desired range for total ECTS credits in a program.\nLeave empty to use defaults (30-42).",
-            "limit": "The maximum number of valid programs to display.\nLeave empty for NO LIMIT.",
-            "sort": "How to sort the final list. Enter a key name.\nExample: total_days, total_credits, total_hours, total_courses",
-            "cache": "If checked, the app will load pre-calculated programs if the\ncourse list, requirements, and credit limits haven't changed,\nsaving significant time. Uncheck to force a new calculation.",
-            "day_cond": "Filter by the number of days with classes. Comma-separated.\nExample: <5",
-            "exclude": "Programs with ANY of these courses will be removed. Comma-separated.\nExample: CS 447.A, ACC 201.A",
-            "include": "Programs must have AT LEAST ONE of these. Comma-separated.\nExample: BUS 302.A, ECO 410.A",
-            "must": "Programs MUST have ALL of these courses. Comma-separated.\nExample: CS 333.A, HIST 101.A"
-        }
+        self.tooltips = {}
+
+        # --- WIDGET CREATION ---
+        self.title_label = ttk.Label(self, font=("Helvetica", 16))
+        self.title_label.pack(pady=10)
+
         top_frame = ttk.Frame(self)
         top_frame.pack(fill="x", expand=True)
-        gen_frame = ttk.LabelFrame(top_frame, text="Generation Parameters")
-        gen_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
+        # Generation Parameters Frame
+        self.gen_frame = ttk.LabelFrame(top_frame)
+        self.gen_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         self.gen_vars = {
             "min_credit": tk.StringVar(value=self.controller.config.generation_params["min_credit"]),
             "max_credit": tk.StringVar(value=self.controller.config.generation_params["max_credit"]),
             "load_if_possible": tk.BooleanVar(value=self.controller.config.input["cache"]["enabled"])
         }
+        self.min_max_label = ttk.Label(self.gen_frame)
+        self.min_max_label.grid(row=0, column=0, sticky="w", padx=5, pady=2)
+        ttk.Entry(self.gen_frame, textvariable=self.gen_vars["min_credit"], width=5).grid(row=0, column=1, sticky="w", padx=5, pady=2)
+        ttk.Entry(self.gen_frame, textvariable=self.gen_vars["max_credit"], width=5).grid(row=0, column=2, sticky="w", pady=2)
+        self.credits_q_label = ttk.Label(self.gen_frame, text="(?)", cursor="question_arrow")
+        self.credits_q_label.grid(row=0, column=3, sticky="w", padx=5)
+        self.cache_check = ttk.Checkbutton(self.gen_frame, variable=self.gen_vars["load_if_possible"])
+        self.cache_check.grid(row=1, column=0, columnspan=3, sticky="w", padx=5, pady=5)
 
-        ttk.Label(gen_frame, text="Min/Max Credits:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        ttk.Entry(gen_frame, textvariable=self.gen_vars["min_credit"], width=5).grid(row=0, column=1, sticky="w",
-                                                                                     padx=5, pady=2)
-        ttk.Entry(gen_frame, textvariable=self.gen_vars["max_credit"], width=5).grid(row=0, column=2, sticky="w",
-                                                                                     pady=2)
-        Tooltip(ttk.Label(gen_frame, text="(?)", cursor="question_arrow"), help_texts["credits"]).widget.grid(row=0,
-                                                                                                              column=3,
-                                                                                                              sticky="w",
-                                                                                                              padx=5)
-        cache_check = ttk.Checkbutton(gen_frame, text="Load cached programs if available",
-                                      variable=self.gen_vars["load_if_possible"])
-        cache_check.grid(row=1, column=0, columnspan=3, sticky="w", padx=5, pady=5)
-        Tooltip(cache_check, help_texts["cache"])
-        out_frame = ttk.LabelFrame(top_frame, text="Output Parameters")
-        out_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        # Output Parameters Frame
+        self.out_frame = ttk.LabelFrame(top_frame)
+        self.out_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         self.out_vars = {
-            "limit": tk.StringVar(value=self.controller.config.display_params["limit_results"]),
+            "limit": tk.StringVar(value=self.controller.config.display_params["limit_results"] or ""),
             "sort_str": tk.StringVar(value=self.controller.config.display_params["sort_key"]),
             "sort_reverse": tk.BooleanVar(value=self.controller.config.display_params["sort_reverse"])
         }
-        ttk.Label(out_frame, text="Limit Programs:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
-        ttk.Entry(out_frame, textvariable=self.out_vars["limit"], width=10).grid(row=0, column=1, sticky="w", padx=5,
-                                                                                 pady=2)
-        Tooltip(ttk.Label(out_frame, text="(?)", cursor="question_arrow"), help_texts["limit"]).widget.grid(row=0,
-                                                                                                            column=2,
-                                                                                                            sticky="w",
-                                                                                                            padx=5)
-        ttk.Label(out_frame, text="Sort By:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
-        ttk.Entry(out_frame, textvariable=self.out_vars["sort_str"], width=20).grid(row=1, column=1, sticky="w", padx=5,
-                                                                                    pady=2)
-        ttk.Checkbutton(out_frame, text="Descending", variable=self.out_vars["sort_reverse"]).grid(row=1, column=2,
-                                                                                                   sticky="w")
-        Tooltip(ttk.Label(out_frame, text="(?)", cursor="question_arrow"), help_texts["sort"]).widget.grid(row=1,
-                                                                                                           column=3,
-                                                                                                           sticky="w",
-                                                                                                           padx=5)
-        filter_frame = ttk.LabelFrame(self, text="Filtering")
-        filter_frame.pack(fill="x", padx=5, pady=5)
-        filter_frame.columnconfigure(1, weight=1)
+        self.limit_label = ttk.Label(self.out_frame)
+        self.limit_label.grid(row=0, column=0, sticky="w", padx=5, pady=2)
+        ttk.Entry(self.out_frame, textvariable=self.out_vars["limit"], width=10).grid(row=0, column=1, sticky="w", padx=5, pady=2)
+        self.limit_q_label = ttk.Label(self.out_frame, text="(?)", cursor="question_arrow")
+        self.limit_q_label.grid(row=0, column=2, sticky="w", padx=5)
+        self.sort_label = ttk.Label(self.out_frame)
+        self.sort_label.grid(row=1, column=0, sticky="w", padx=5, pady=2)
+        ttk.Entry(self.out_frame, textvariable=self.out_vars["sort_str"], width=20).grid(row=1, column=1, sticky="w", padx=5, pady=2)
+        self.sort_desc_check = ttk.Checkbutton(self.out_frame, variable=self.out_vars["sort_reverse"])
+        self.sort_desc_check.grid(row=1, column=2, sticky="w")
+        self.sort_q_label = ttk.Label(self.out_frame, text="(?)", cursor="question_arrow")
+        self.sort_q_label.grid(row=1, column=3, sticky="w", padx=5)
 
-        self.filter_vars = {"day_num_cond": tk.StringVar(), "exclude": tk.StringVar(), "include": tk.StringVar(),
-                            "must": tk.StringVar()}
-
-        # We'll use IntVar: 0=Empty, 1=Checked (✔), 2=Crossed (✘)
+        # Filtering Frame
+        self.filter_frame = ttk.LabelFrame(self)
+        self.filter_frame.pack(fill="x", padx=5, pady=5)
+        self.filter_frame.columnconfigure(1, weight=1)
+        self.filter_vars = {"day_num_cond": tk.StringVar(), "exclude": tk.StringVar(), "include": tk.StringVar(), "must": tk.StringVar()}
         self.day_checkbox_vars = {day: tk.IntVar(value=0) for day in ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]}
 
-        # --- REBUILDING THE FILTER FRAME UI ---
-
-        # 1. Day Conditions Row
-        day_filter_frame = ttk.Frame(filter_frame)
+        day_filter_frame = ttk.Frame(self.filter_frame)
         day_filter_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=5, pady=2)
-
-        ttk.Label(day_filter_frame, text="Day Conditions:").pack(side="left")
-
-        # Number of days entry
+        self.day_cond_label = ttk.Label(day_filter_frame)
+        self.day_cond_label.pack(side="left")
         ttk.Entry(day_filter_frame, textvariable=self.filter_vars["day_num_cond"], width=5).pack(side="left", padx=5)
-        Tooltip(ttk.Label(day_filter_frame, text="(?)", cursor="question_arrow"),
-                "Filter by number of days (e.g., <=3)").widget.pack(side="left", padx=(0, 20))
-
-        # Day specific checkboxes
+        self.day_num_q_label = ttk.Label(day_filter_frame, text="(?)", cursor="question_arrow")
+        self.day_num_q_label.pack(side="left", padx=(0, 20))
+        self.day_cbs = {}
         for day, var in self.day_checkbox_vars.items():
             # Create the checkbutton
             cb = ttk.Checkbutton(day_filter_frame, text=day[:2], variable=var)
@@ -109,47 +91,90 @@ class Screen3(ttk.Frame):
 
 
             cb.pack(side="left", padx=2)
-            # Create a tooltip for each checkbox
-            Tooltip(cb,
-                    f"Cycle states for {day}:\n  Empty: Don't care\n  Checked (✔): Must include\n  Crossed (✘): Must exclude")
+            self.day_cbs[day] = cb
 
+        self.exclude_label = ttk.Label(self.filter_frame)
+        self.exclude_label.grid(row=1, column=0, sticky="w", padx=5, pady=2)
+        ttk.Entry(self.filter_frame, textvariable=self.filter_vars["exclude"], width=40).grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+        self.exclude_q_label = ttk.Label(self.filter_frame, text="(?)", cursor="question_arrow")
+        self.exclude_q_label.grid(row=1, column=2, sticky="w", padx=5)
 
-        # 2. Other Filter Rows (Exclude, Include, Must)
-        row_map = [("Exclude Courses:", "exclude", help_texts["exclude"]),
-                   ("Include At Least One:", "include", help_texts["include"]),
-                   ("Must Have Courses:", "must", help_texts["must"])]
+        self.include_label = ttk.Label(self.filter_frame)
+        self.include_label.grid(row=2, column=0, sticky="w", padx=5, pady=2)
+        ttk.Entry(self.filter_frame, textvariable=self.filter_vars["include"], width=40).grid(row=2, column=1, sticky="ew", padx=5, pady=2)
+        self.include_q_label = ttk.Label(self.filter_frame, text="(?)", cursor="question_arrow")
+        self.include_q_label.grid(row=2, column=2, sticky="w", padx=5)
 
-        for i, (label_text, key, help_text) in enumerate(row_map):
-            # Start at row=1 since day conditions are in row=0
-            ttk.Label(filter_frame, text=label_text).grid(row=i+1, column=0, sticky="w", padx=5, pady=2)
-            ttk.Entry(filter_frame, textvariable=self.filter_vars[key], width=40).grid(row=i+1, column=1, sticky="ew", padx=5, pady=2)
-            Tooltip(ttk.Label(filter_frame, text="(?)", cursor="question_arrow"), help_text).widget.grid(row=i+1, column=2, sticky="w", padx=5)
+        self.must_label = ttk.Label(self.filter_frame)
+        self.must_label.grid(row=3, column=0, sticky="w", padx=5, pady=2)
+        ttk.Entry(self.filter_frame, textvariable=self.filter_vars["must"], width=40).grid(row=3, column=1, sticky="ew", padx=5, pady=2)
+        self.must_q_label = ttk.Label(self.filter_frame, text="(?)", cursor="question_arrow")
+        self.must_q_label.grid(row=3, column=2, sticky="w", padx=5)
 
         bottom_frame = ttk.Frame(self)
         bottom_frame.pack(fill="x", pady=10)
-        ttk.Button(bottom_frame, text="Back", command=lambda: controller.show_screen2()).pack(side="left")
-
-        # --- MODIFIED: Pack generate and cancel buttons in a sub-frame for alignment ---
+        self.back_btn = ttk.Button(bottom_frame, command=lambda: controller.show_screen2())
+        self.back_btn.pack(side="left")
         button_container = ttk.Frame(bottom_frame)
         button_container.pack(side="right")
-
-        self.generate_btn = ttk.Button(button_container, text="GENERATE PROGRAMS", command=self.start_generation_thread)
+        self.generate_btn = ttk.Button(button_container, command=self.start_generation_thread)
         self.generate_btn.pack(side="right")
-
-        # --- NEW: Add the Cancel button, initially hidden ---
-        self.cancel_btn = ttk.Button(button_container, text="Cancel", command=self.cancel_generation, state="disabled")
+        self.cancel_btn = ttk.Button(button_container, command=self.cancel_generation, state="disabled")
         self.cancel_btn.pack(side="right", padx=(0, 5))
-
-        self.save_output_btn = ttk.Button(bottom_frame, text="Save Output As...", command=self.save_output, state="disabled")
+        self.save_output_btn = ttk.Button(bottom_frame, command=self.save_output, state="disabled")
         self.save_output_btn.pack(side="right", padx=10)
-        log_frame = ttk.LabelFrame(self, text="Output Log")
-        log_frame.pack(fill="both", expand=True, padx=5, pady=5)
-        self.output_text = tk.Text(log_frame, wrap="word", height=15)
+
+        # Log Frame
+        self.log_frame = ttk.LabelFrame(self)
+        self.log_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        self.output_text = tk.Text(self.log_frame, wrap="word", height=15)
         self.output_text.pack(fill="both", expand=True, side="left")
-        scrollbar = ttk.Scrollbar(log_frame, orient="vertical", command=self.output_text.yview)
+        scrollbar = ttk.Scrollbar(self.log_frame, orient="vertical", command=self.output_text.yview)
         scrollbar.pack(fill="y", side="right")
         self.output_text.config(yscrollcommand=scrollbar.set)
         sys.stdout = StdoutRedirector(self.output_text)
+
+        self.update_text()
+
+    def update_text(self):
+        """Update all text elements on this screen to the current language."""
+        loc = self.loc
+        self.title_label.config(text=loc.get_string('screen3_title'))
+        self.gen_frame.config(text=loc.get_string('gen_params_label'))
+        self.min_max_label.config(text=loc.get_string('min_max_credits_label'))
+        self.cache_check.config(text=loc.get_string('load_cached_label'))
+        self.out_frame.config(text=loc.get_string('output_params_label'))
+        self.limit_label.config(text=loc.get_string('limit_programs_label'))
+        self.sort_label.config(text=loc.get_string('sort_by_label'))
+        self.sort_desc_check.config(text=loc.get_string('descending_label'))
+        self.filter_frame.config(text=loc.get_string('filtering_label'))
+        self.day_cond_label.config(text=loc.get_string('day_conds_label'))
+        self.exclude_label.config(text=loc.get_string('exclude_courses_label'))
+        self.include_label.config(text=loc.get_string('include_one_label'))
+        self.must_label.config(text=loc.get_string('must_have_label'))
+        self.back_btn.config(text=loc.get_string('back'))
+        # Handle button state for generate/cancel
+        if self.generate_btn['state'] == 'disabled':
+            self.generate_btn.config(text=loc.get_string('generating_btn'))
+            self.cancel_btn.config(text=loc.get_string('cancelling_btn') if self.cancel_btn['text'] != loc.get_string('cancel_btn') else loc.get_string('cancel_btn'))
+        else:
+            self.generate_btn.config(text=loc.get_string('generate_btn'))
+            self.cancel_btn.config(text=loc.get_string('cancel_btn'))
+
+        self.save_output_btn.config(text=loc.get_string('save_output_btn'))
+        self.log_frame.config(text=loc.get_string('output_log_label'))
+
+        # --- Re-create Tooltips ---
+        self.tooltips['credits'] = Tooltip(self.credits_q_label, loc.get_string('credits_tooltip'))
+        self.tooltips['cache'] = Tooltip(self.cache_check, loc.get_string('cache_tooltip'))
+        self.tooltips['limit'] = Tooltip(self.limit_q_label, loc.get_string('limit_tooltip'))
+        self.tooltips['sort'] = Tooltip(self.sort_q_label, loc.get_string('sort_tooltip'))
+        self.tooltips['day_num'] = Tooltip(self.day_num_q_label, loc.get_string('day_num_tooltip'))
+        self.tooltips['exclude'] = Tooltip(self.exclude_q_label, loc.get_string('exclude_tooltip'))
+        self.tooltips['include'] = Tooltip(self.include_q_label, loc.get_string('include_tooltip'))
+        self.tooltips['must'] = Tooltip(self.must_q_label, loc.get_string('must_tooltip'))
+        for day, cb in self.day_cbs.items():
+            self.tooltips[day] = Tooltip(cb, loc.get_string('day_cycle_tooltip', day=day))
 
     def _generate_cache_filename(self):
         config_obj = self.controller.config
@@ -165,7 +190,7 @@ class Screen3(ttk.Frame):
 
     def save_output(self):
         if not self.last_auto_save_path or not os.path.exists(self.last_auto_save_path):
-            messagebox.showwarning("Warning", "No auto-saved output file found. Please generate programs first.")
+            messagebox.showwarning(self.loc.get_string('warning'), self.loc.get_string('no_output_found_warning'))
             return
         default_filename = os.path.basename(self.last_auto_save_path)
         destination_path = filedialog.asksaveasfilename(initialfile=default_filename, defaultextension=".txt",
@@ -174,15 +199,16 @@ class Screen3(ttk.Frame):
         if destination_path:
             try:
                 shutil.copy(self.last_auto_save_path, destination_path)
-                messagebox.showinfo("Success", f"Output file copied to:\n{destination_path}")
+                messagebox.showinfo("Success", self.loc.get_string('output_copied_msg', path=destination_path))
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to copy file: {e}")
+                messagebox.showerror(self.loc.get_string('error'), f"Failed to copy file: {e}")
 
     def start_generation_thread(self):
-        self.cancel_event.clear()  # Reset the event for a new run
-        self.generate_btn.config(state="disabled", text="Generating...")
-        self.cancel_btn.config(state="normal") # Show the cancel button
+        self.cancel_event.clear()
+        self.generate_btn.config(state="disabled", text=self.loc.get_string('generating_btn'))
+        self.cancel_btn.config(state="normal", text=self.loc.get_string('cancel_btn'))
         self.save_output_btn.config(state="disabled")
+        self.controller.toggle_lang_buttons(enabled=False) # Disable lang switching
 
         self.last_auto_save_path = None
         self.output_text.configure(state='normal')
@@ -200,28 +226,31 @@ class Screen3(ttk.Frame):
         self.after(100, self.check_queue)
 
     def cancel_generation(self):
-        print("\n--- CANCELLATION REQUESTED ---")
-        self.cancel_event.set() # Signal the worker thread to stop
-        self.cancel_btn.config(state="disabled", text="Cancelling...")
+        print(self.loc.get_string('gen_cancelled_log').strip())
+        self.cancel_event.set()
+        self.cancel_btn.config(state="disabled", text=self.loc.get_string('cancelling_btn'))
 
     def check_queue(self):
         try:
             result = self.queue.get(block=False)
             if isinstance(result, tuple) and len(result) == 3:
-                summarized_programs, result_text, auto_save_path = result
+                _, result_text, auto_save_path = result
                 is_error = "--- AN ERROR OCCURRED ---" in result_text
                 if not is_error:
-                    print("\n--- GENERATION COMPLETE ---")
+                    print(self.loc.get_string('gen_complete_log'))
                     self.last_auto_save_path = auto_save_path
                     self.save_output_btn.config(state="normal")
-                print(result_text)
+                # print(result_text) # This is already handled by StdoutRedirector now
             elif isinstance(result, str) and result == "CANCELLED":
-                print("\n--- GENERATION CANCELLED BY USER ---")
-            else:
-                print(result)
-            self.generate_btn.config(state="normal", text="GENERATE PROGRAMS")
-            self.cancel_btn.config(state="disabled", text="Cancel") # Reset cancel button
+                 # Message already printed in cancel_generation
+                 pass
+            # else:
+            #     print(result) # Already handled
 
+            # --- Reset UI state ---
+            self.generate_btn.config(state="normal", text=self.loc.get_string('generate_btn'))
+            self.cancel_btn.config(state="disabled", text=self.loc.get_string('cancel_btn'))
+            self.controller.toggle_lang_buttons(enabled=True) # Re-enable lang switching
         except queue.Empty:
             self.after(100, self.check_queue)
 
@@ -258,18 +287,18 @@ class Screen3(ttk.Frame):
             config_obj.update()
             cache_filepath = self._generate_cache_filename()
             config_obj.input["cache"]["filepath"] = cache_filepath
-            print("Configuration updated. Starting generation process...\n")
+            print(self.loc.get_string('gen_config_updated_log'))
             summarized_programs, results_output, auto_save_path = run_program_generation(config_obj, cancel_event)
+
             if cancel_event.is_set():
                 self.queue.put("CANCELLED")
             else:
                 self.queue.put((summarized_programs, results_output, auto_save_path))
 
         except ValueError:
-            self.queue.put(
-                ("\n--- AN ERROR OCCURRED ---\nError: Please ensure Min/Max Credits and Limit Programs are valid numbers.",))
+            self.queue.put((None, self.loc.get_string('gen_value_error_log'), None))
         except Exception as e:
-            self.queue.put((f"\n--- AN ERROR OCCURRED ---\n{e}",))
+            self.queue.put((None, self.loc.get_string('gen_error_log', e=e), None))
 
     def _on_day_checkbox_click(self, event, var):
         """

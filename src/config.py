@@ -84,6 +84,8 @@ class Config:
         self.filter_function = None
         self.filter_description = "None"
         self.sort_function = None
+        self.loc = None # This will be set by the App controller
+
 
     def _build_filter_function(self):
         """

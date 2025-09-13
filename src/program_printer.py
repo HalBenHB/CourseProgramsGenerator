@@ -1,23 +1,25 @@
 from src.program_generator import time_to_minutes
 
-def format_program_info(program, courses, include_schedule):
-    program_output = f"\nProgram {program['program_index']}:\n"  # Assuming you will add program_index when calling this
-    program_output += "Courses:"
+def format_program_info(program, courses, include_schedule, loc_manager):
+    loc = loc_manager
+    program_output = loc.get_string('program_header', index=program['program_index'])
+    program_output += loc.get_string('courses_header')
     for course_code in program['courses']:
         program_output += f" {course_code} |"
     program_output += "\n"
-    program_output += f"Total Credits: {program['total_credits']}\n"
-    program_output += f"Total Days: {program['total_days']}\n"
-    program_output += f"Total Hours: {program['total_hours']:.2f}\n"
+    program_output += loc.get_string('total_credits_header', credits=program['total_credits'])
+    program_output += loc.get_string('total_days_header', days=program['total_days'])
+    program_output += loc.get_string('total_hours_header', hours=program['total_hours'])
 
     if include_schedule:
-        program_output += format_program_schedule(program, courses)  # Call helper for schedule formatting
+        program_output += format_program_schedule(program, courses, loc)  # Call helper for schedule formatting
 
     return program_output
 
 
-def format_program_schedule(program, courses):
-    schedule_output = "Weekly Schedule:\n"
+def format_program_schedule(program, courses, loc_manager):
+    loc = loc_manager
+    schedule_output = loc.get_string('weekly_schedule_header')
     schedule_by_day = {}
     for course_code in program['courses']:
         course_data = courses[course_code]
@@ -31,7 +33,7 @@ def format_program_schedule(program, courses):
                 'course_code': course_code,
                 'course_name': course_data.course_name})
 
-    day_order = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"]
+    day_order = loc.get_string('day_names')
     time_slots_display = [
         "08.40-09.30", "09.40-10.30", "10.40-11.30", "11.40-12.30", "12.40-13.30",
         "13.40-14.30", "14.40-15.30", "15.40-16.30", "16.40-17.30", "17.40-18.30",
@@ -63,11 +65,11 @@ def format_program_schedule(program, courses):
                             calendar_grid[day][slot_index] = entry['course_code']  # Put course code in slot
 
     schedule_output += format_calendar_grid(calendar_grid, day_order,
-                                            time_slots_display)  # Call helper for grid printing
+                                            time_slots_display, loc)  # Call helper for grid printing
     return schedule_output
 
 
-def format_calendar_grid(calendar_grid, day_order, time_slots_display):
+def format_calendar_grid(calendar_grid, day_order, time_slots_display, loc_manager):
     try:
         course_code_len = max(len(course_code) for day in day_order for course_code in calendar_grid[day]) if any(any(d) for d in calendar_grid.values()) else 10
     except ValueError:
@@ -78,7 +80,7 @@ def format_calendar_grid(calendar_grid, day_order, time_slots_display):
     separator = "-" * separator_length + "\n"
     grid_output += separator
 
-    grid_output += "| {:<{}}".format("Time", 11)  # Time column header
+    grid_output += "| {:<{}}".format(loc_manager.get_string('time_header'), 11)  # Time column header
     for day in day_order:
         grid_output += "| {:<{}}".format(day, course_code_len)  # Day column headers
     grid_output += "|\n"
@@ -94,10 +96,10 @@ def format_calendar_grid(calendar_grid, day_order, time_slots_display):
     return grid_output
 
 
-def list_programs(programs, courses, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None,
+def list_programs(programs, courses, loc_manager, filter_function=None, sort_function=None, print_wanted=None, return_wanted=None,
                   save_txt=None, include_schedule=None, limit_results=None, filter_description=None,
                   sort_description=None, sort_reverse=False, cancel_event=None):
-
+    loc = loc_manager
     output_parts = []
     if cancel_event and cancel_event.is_set():
         return [], "".join(output_parts)
@@ -105,7 +107,7 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
     summarized_programs = programs
     if filter_function:
         summarized_programs = list(filter(filter_function, summarized_programs))
-        output_parts.append("Filter functions: " + filter_description + "\n")
+        output_parts.append(loc.get_string('filter_log', desc=filter_description))
         print(f"Filtered. Remained {len(summarized_programs)} programs")
 
     # --- NEW: Check for cancellation before sorting ---
@@ -114,17 +116,18 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
 
     if sort_function:
         summarized_programs = sorted(summarized_programs, key=sort_function, reverse=sort_reverse)
-        output_parts.append("Sorted by: " + sort_description + (" (Descending)" if sort_reverse else "") + "\n")
-        print(f"Sorted by: {sort_description}" + (" (Descending)" if sort_reverse else ""))
+        rev_str = " (Descending)" if sort_reverse else ""
+        output_parts.append(loc.get_string('sort_log', desc=sort_description, rev=rev_str))
+        print(f"Sorted by: {sort_description}" + rev_str)
 
-    output_parts.append("Total programs found: " + str(len(summarized_programs)) + "\n")
+    output_parts.append(loc.get_string('total_programs_log', count=len(summarized_programs)))
 
     if print_wanted or save_txt:
         programs_to_print = summarized_programs[:limit_results] if limit_results else summarized_programs
         total_to_process = len(programs_to_print)
 
         if limit_results:
-            output_parts.append(f"Displaying top {min(limit_results, total_to_process)}:\n")
+            output_parts.append(loc.get_string('displaying_top_log', count=min(limit_results, total_to_process)))
 
         print("\r\r\r")  # A newline before progress bar
         for i, program in enumerate(programs_to_print):
@@ -141,7 +144,7 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
                 return None, None
 
             program["program_index"] = i + 1
-            program_output = format_program_info(program, courses, include_schedule)
+            program_output = format_program_info(program, courses, include_schedule, loc)
 
             output_parts.append(program_output) # Append to the list (very fast)
 

@@ -1,0 +1,269 @@
+class LocalizationManager:
+    """Manages language settings and provides translated strings."""
+
+    def __init__(self, initial_language='en'):
+        self.language_data = {
+            'en': {
+                # App & Global
+                'app_title': "Course Program Generator",
+                'browse': "Browse...",
+                'back': "Back",
+                'error': "Error",
+                'info': "Info",
+                'warning': "Warning",
+                'confirm_delete': "Confirm Delete",
+                'confirm_delete_msg': "Are you sure you want to delete this requirement?",
+
+                # Screen 1: Setup
+                'screen1_welcome': "Welcome!",
+                'screen1_select_file': "Select the offered courses file (e.g., course_offered_2425F.xls).",
+                'load_and_continue': "Load Courses and Continue",
+                'file_not_found_msg': "File not found! Please check the path.",
+                'file_load_error_msg': "Failed to load or parse courses file:\n{e}",
+
+                # Screen 2: Builder
+                'screen2_title': "Requirement Builder",
+                'available_courses_label': "Available Courses (Double-click to add)",
+                'edit_req_label': "Edit Selected Requirement",
+                'req_name_label': "Requirement Name:",
+                'needed_label': "Needed:",
+                'add_selected_btn': "-> Add Selected",
+                'remove_selected_btn': "<- Remove Selected",
+                'candidate_courses_label': "Candidate Courses:",
+                'program_reqs_label': "Program Requirements",
+                'new_blank_req_btn': "New Blank Requirement",
+                'delete_selected_btn': "Delete Selected",
+                'quick_add_req_label': "Quick Add Requirement",
+                'add_btn': "Add",
+                'continue_to_config': "Continue to Final Configuration",
+                'save_to_json': "Save to JSON",
+                'load_last_session': "Load Last Session",
+                'load_from_json': "Load from JSON",
+                'select_template_msg': "Please select a template from the list first.",
+                'req_delete_warning': "Please select a requirement to delete.",
+                'req_add_course_warning': "Please create or select a requirement first.",
+                'req_select_courses_warning': "Please select one or more courses from 'Available Courses'.",
+                'req_remove_courses_warning': "Please select courses from 'Candidate Courses' to remove.",
+                'reqs_saved_msg': "Requirements saved to {filename}",
+                'reqs_loaded_msg': "Loaded {count} requirements.",
+                'no_last_session_msg': "No last session file found to load.",
+                'min_one_req_error': "You must create or load at least one requirement.",
+
+                # Screen 3: Generation
+                'screen3_title': "Final Configuration & Generation",
+                'gen_params_label': "Generation Parameters",
+                'min_max_credits_label': "Min/Max Credits:",
+                'load_cached_label': "Load cached programs if available",
+                'output_params_label': "Output Parameters",
+                'limit_programs_label': "Limit Programs:",
+                'sort_by_label': "Sort By:",
+                'descending_label': "Descending",
+                'filtering_label': "Filtering",
+                'day_conds_label': "Day Conditions:",
+                'exclude_courses_label': "Exclude Courses:",
+                'include_one_label': "Include At Least One:",
+                'must_have_label': "Must Have Courses:",
+                'generate_btn': "GENERATE PROGRAMS",
+                'generating_btn': "Generating...",
+                'save_output_btn': "Save Output As...",
+                'cancel_btn': "Cancel",
+                'cancelling_btn': "Cancelling...",
+                'output_log_label': "Output Log",
+                'no_output_found_warning': "No auto-saved output file found. Please generate programs first.",
+                'output_copied_msg': "Output file copied to:\n{path}",
+                'gen_complete_log': "\n--- GENERATION COMPLETE ---",
+                'gen_cancelled_log': "\n--- GENERATION CANCELLED BY USER ---",
+                'gen_config_updated_log': "Configuration updated. Starting generation process...\n",
+                'gen_error_log': "\n--- AN ERROR OCCURRED ---\n{e}",
+                'gen_value_error_log': "\n--- AN ERROR OCCURRED ---\nError: Please ensure Min/Max Credits and Limit Programs are valid numbers.",
+
+                # Tooltips
+                'credits_tooltip': "Set the desired range for total ECTS credits in a program.\nLeave empty to use defaults (30-42).",
+                'limit_tooltip': "The maximum number of valid programs to display.\nLeave empty for NO LIMIT.",
+                'sort_tooltip': "How to sort the final list. Enter a key name.\nExample: total_days, total_credits, total_hours, total_courses",
+                'cache_tooltip': "If checked, the app will load pre-calculated programs if the\ncourse list, requirements, and credit limits haven't changed,\nsaving significant time. Uncheck to force a new calculation.",
+                'day_num_tooltip': "Filter by number of days (e.g., <=3)",
+                'day_cycle_tooltip': "Cycle states for {day}:\n  Empty: Don't care\n  Checked (✔): Must include\n  Crossed (✘): Must exclude",
+                'exclude_tooltip': "Programs with ANY of these courses will be removed. Comma-separated.\nExample: CS 447.A, ACC 201.A",
+                'include_tooltip': "Programs must have AT LEAST ONE of these. Comma-separated.\nExample: BUS 302.A, ECO 410.A",
+                'must_tooltip': "Programs MUST have ALL of these courses. Comma-separated.\nExample: CS 333.A, HIST 101.A",
+
+                # Program Printer
+                'program_header': "\nProgram {index}:\n",
+                'courses_header': "Courses:",
+                'total_credits_header': "Total Credits: {credits}\n",
+                'total_days_header': "Total Days: {days}\n",
+                'total_hours_header': "Total Hours: {hours:.2f}\n",
+                'weekly_schedule_header': "Weekly Schedule:\n",
+                'time_header': "Time",
+                'day_names': ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                'filter_log': "Filter functions: {desc}\n",
+                'sort_log': "Sorted by: {desc}{rev}\n",
+                'total_programs_log': "Total programs found: {count}\n",
+                'displaying_top_log': "Displaying top {count}:\n",
+
+                # Predefined Requirement Names (Keys must match screen2_builder.py)
+                'babus_area_elective': "BABUS Specialization Area Elective",
+                'babus_free_elective': "BABUS Free Elective",
+                'babus_fin_elective': "BABUS Program Elective (FIN)",
+                'babus_mgmt_elective': "BABUS Program Elective (MGMT)",
+                'babus_mis_elective': "BABUS Program Elective (MIS)",
+                'babus_mktg_elective': "BABUS Program Elective (MKTG)",
+                'babus_oper_elective': "BABUS Program Elective (OPER)",
+                'bscs_program_elective': "BSCS Program Elective",
+                'bscs_ss_elective': "BSCS FE Social Science Elective",
+                'bscs_cert_elective': "BSCS FE Certificate Elective",
+                'bscs_free_elective': "BSCS FE Free Elective",
+                'tll101': "TLL 101 Offered Branches",
+                'tll102': "TLL 102 Offered Branches",
+                'eng101': "ENG 101 Offered Branches",
+                'eng102': "ENG 102 Offered Branches",
+                'hist201': "HIST 201 Offered Branches",
+                'hist202': "HIST 202 Offered Branches",
+                'custom_file_option': "Add from Custom File...",
+            },
+            'tr': {
+                # App & Global
+                'app_title': "Ders Programı Oluşturucu",
+                'browse': "Gözat...",
+                'back': "Geri",
+                'error': "Hata",
+                'info': "Bilgi",
+                'warning': "Uyarı",
+                'confirm_delete': "Silmeyi Onayla",
+                'confirm_delete_msg': "Bu gereksinimi silmek istediğinizden emin misiniz?",
+
+                # Screen 1: Setup
+                'screen1_welcome': "Hoş Geldiniz!",
+                'screen1_select_file': "Açılan dersler dosyasını seçin (örn: course_offered_2425F.xls).",
+                'load_and_continue': "Dersleri Yükle ve Devam Et",
+                'file_not_found_msg': "Dosya bulunamadı! Lütfen yolu kontrol edin.",
+                'file_load_error_msg': "Ders dosyası yüklenirken veya işlenirken hata oluştu:\n{e}",
+
+                # Screen 2: Builder
+                'screen2_title': "Gereksinim Oluşturucu",
+                'available_courses_label': "Mevcut Dersler (Eklemek için çift tıklayın)",
+                'edit_req_label': "Seçili Gereksinimi Düzenle",
+                'req_name_label': "Gereksinim Adı:",
+                'needed_label': "Gerekli Sayı:",
+                'add_selected_btn': "-> Seçileni Ekle",
+                'remove_selected_btn': "<- Seçileni Çıkar",
+                'candidate_courses_label': "Aday Dersler:",
+                'program_reqs_label': "Program Gereksinimleri",
+                'new_blank_req_btn': "Yeni Boş Gereksinim",
+                'delete_selected_btn': "Seçileni Sil",
+                'quick_add_req_label': "Hızlı Gereksinim Ekle",
+                'add_btn': "Ekle",
+                'continue_to_config': "Son Yapılandırmaya Devam Et",
+                'save_to_json': "JSON'a Kaydet",
+                'load_last_session': "Son Oturumu Yükle",
+                'load_from_json': "JSON'dan Yükle",
+                'select_template_msg': "Lütfen önce listeden bir şablon seçin.",
+                'req_delete_warning': "Lütfen silmek için bir gereksinim seçin.",
+                'req_add_course_warning': "Lütfen önce bir gereksinim oluşturun veya seçin.",
+                'req_select_courses_warning': "'Mevcut Dersler' listesinden bir veya daha fazla ders seçin.",
+                'req_remove_courses_warning': "'Aday Dersler' listesinden çıkarılacak dersleri seçin.",
+                'reqs_saved_msg': "Gereksinimler şuraya kaydedildi: {filename}",
+                'reqs_loaded_msg': "{count} adet gereksinim yüklendi.",
+                'no_last_session_msg': "Yüklenecek son oturum dosyası bulunamadı.",
+                'min_one_req_error': "En az bir gereksinim oluşturmalı veya yüklemelisiniz.",
+
+                # Screen 3: Generation
+                'screen3_title': "Son Yapılandırma & Oluşturma",
+                'gen_params_label': "Oluşturma Parametreleri",
+                'min_max_credits_label': "Min/Maks Kredi:",
+                'load_cached_label': "Varsa önbellekteki programları yükle",
+                'output_params_label': "Çıktı Parametreleri",
+                'limit_programs_label': "Program Limiti:",
+                'sort_by_label': "Sıralama Ölçütü:",
+                'descending_label': "Azalan",
+                'filtering_label': "Filtreleme",
+                'day_conds_label': "Gün Koşulları:",
+                'exclude_courses_label': "Bu Dersleri Hariç Tut:",
+                'include_one_label': "Bunlardan En Az Biri Olsun:",
+                'must_have_label': "Bu Dersler Zorunlu:",
+                'generate_btn': "PROGRAMLARI OLUŞTUR",
+                'generating_btn': "Oluşturuluyor...",
+                'save_output_btn': "Çıktıyı Farklı Kaydet...",
+                'cancel_btn': "İptal Et",
+                'cancelling_btn': "İptal Ediliyor...",
+                'output_log_label': "Çıktı Kayıtları",
+                'no_output_found_warning': "Otomatik kaydedilmiş çıktı dosyası bulunamadı. Lütfen önce program oluşturun.",
+                'output_copied_msg': "Çıktı dosyası şuraya kopyalandı:\n{path}",
+                'gen_complete_log': "\n--- OLUŞTURMA TAMAMLANDI ---",
+                'gen_cancelled_log': "\n--- OLUŞTURMA KULLANICI TARAFINDAN İPTAL EDİLDİ ---",
+                'gen_config_updated_log': "Yapılandırma güncellendi. Oluşturma süreci başlıyor...\n",
+                'gen_error_log': "\n--- BİR HATA OLUŞTU ---\n{e}",
+                'gen_value_error_log': "\n--- BİR HATA OLUŞTU ---\nLütfen Min/Maks Kredi ve Program Limiti alanlarına geçerli sayılar girin.",
+
+                # Tooltips
+                'credits_tooltip': "Bir programdaki toplam AKTS kredisi için istenen aralığı ayarlayın.\nVarsayılanları (30-42) kullanmak için boş bırakın.",
+                'limit_tooltip': "Görüntülenecek maksimum geçerli program sayısı.\nSINIRSIZ için boş bırakın.",
+                'sort_tooltip': "Son listenin nasıl sıralanacağını belirtin. Bir anahtar kelime girin.\nÖrnek: total_days, total_credits, total_hours, total_courses",
+                'cache_tooltip': "İşaretlenirse, ders listesi, gereksinimler ve kredi limitleri değişmediyse,\nuygulama önceden hesaplanmış programları yükleyerek önemli ölçüde zaman kazandırır.",
+                'day_num_tooltip': "Ders olan gün sayısına göre filtrele (örn: <=3)",
+                'day_cycle_tooltip': "{day} için durumlar arasında geçiş yap:\n  Boş: Fark etmez\n  İşaretli (✔): Mutlaka içermeli\n  Çapraz (✘): Mutlaka hariç tutulmalı",
+                'exclude_tooltip': "Bu derslerden HERHANGİ BİRİNİ içeren programlar kaldırılacaktır. Virgülle ayırın.\nÖrnek: CS 447.A, ACC 201.A",
+                'include_tooltip': "Programlar bu derslerden EN AZ BİRİNİ içermelidir. Virgülle ayırın.\nÖrnek: BUS 302.A, ECO 410.A",
+                'must_tooltip': "Programlar bu derslerin TÜMÜNÜ içermelidir. Virgülle ayırın.\nÖrnek: CS 333.A, HIST 101.A",
+
+                # Program Printer
+                'program_header': "\nProgram {index}:\n",
+                'courses_header': "Dersler:",
+                'total_credits_header': "Toplam Kredi: {credits}\n",
+                'total_days_header': "Toplam Gün: {days}\n",
+                'total_hours_header': "Toplam Saat: {hours:.2f}\n",
+                'weekly_schedule_header': "Haftalık Program:\n",
+                'time_header': "Saat",
+                'day_names': ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"],
+                'filter_log': "Filtre fonksiyonları: {desc}\n",
+                'sort_log': "Sıralama ölçütü: {desc}{rev}\n",
+                'total_programs_log': "Toplam {count} program bulundu\n",
+                'displaying_top_log': "İlk {count} program gösteriliyor:\n",
+
+                # Predefined Requirement Names
+                'babus_area_elective': "BABUS Özelleşilen Alan Seçmeli",
+                'babus_free_elective': "BABUS Serbest Seçmeli",
+                'babus_fin_elective': "BABUS Program İçin Seçmeli (FIN)",
+                'babus_mgmt_elective': "BABUS Program İçin Seçmeli (MGMT)",
+                'babus_mis_elective': "BABUS Program İçin Seçmeli (MIS)",
+                'babus_mktg_elective': "BABUS Program İçin Seçmeli (MKTG)",
+                'babus_oper_elective': "BABUS Program İçin Seçmeli (OPER)",
+                'bscs_program_elective': "BSCS Program İçi Seçmeli",
+                'bscs_ss_elective': "BSCS FE Sosyal Bilimler Seçmeli",
+                'bscs_cert_elective': "BSCS FE Sertifika Seçmeli",
+                'bscs_free_elective': "BSCS FE Serbest Seçmeli",
+                'tll101': "TLL 101 Açılan Şubeler",
+                'tll102': "TLL 102 Açılan Şubeler",
+                'eng101': "ENG 101 Açılan Şubeler",
+                'eng102': "ENG 102 Açılan Şubeler",
+                'hist201': "HIST 201 Açılan Şubeler",
+                'hist202': "HIST 202 Açılan Şubeler",
+                'custom_file_option': "Özel Dosyadan Ekle...",
+            },
+        }
+        self.current_language = initial_language
+        self._observers = []
+
+    def register(self, observer_callback):
+        """Register a callback function to be called on language change."""
+        if observer_callback not in self._observers:
+            self._observers.append(observer_callback)
+
+    def set_language(self, language_code):
+        """Set the current language and notify all observers."""
+        if language_code in self.language_data and self.current_language != language_code:
+            self.current_language = language_code
+            for callback in self._observers:
+                callback()  # Call the update method of the observer
+
+    def get_string(self, key, **kwargs):
+        """
+        Retrieve a string for the given key in the current language.
+        Allows for dynamic value formatting.
+        """
+        try:
+            string_template = self.language_data[self.current_language].get(key, f"_{key}_")
+            return string_template.format(**kwargs)
+        except KeyError:
+            return f"_{key}_" # Return a noticeable error string if key is missing
