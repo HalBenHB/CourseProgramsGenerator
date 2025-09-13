@@ -11,7 +11,15 @@ from tkinter import ttk, filedialog, messagebox
 from src.main import run_program_generation
 from .widgets import Tooltip, StdoutRedirector  # <-- Relative import
 
-
+# --- NEW: Mapping for Sort Options ---
+# Maps the language-independent key to its localization key
+SORT_OPTIONS = {
+    None: 'sort_by_none',
+    "total_days": 'sort_by_total_days',
+    "total_credits": 'sort_by_total_credits',
+    "total_hours": 'sort_by_total_hours',
+    "total_courses": 'sort_by_total_courses'
+}
 class Screen3(ttk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -21,6 +29,13 @@ class Screen3(ttk.Frame):
         self.last_auto_save_path = None
         self.cancel_event = threading.Event()
         self.tooltips = {}
+
+        # --- NEW: Language-independent keys and maps ---
+        self.day_keys = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+        self.day_key_to_loc_key_map = {
+            "mon": "monday", "tue": "tuesday", "wed": "wednesday",
+            "thu": "thursday", "fri": "friday", "sat": "saturday", "sun": "sunday"
+        }
 
         # --- WIDGET CREATION ---
         self.title_label = ttk.Label(self, font=("Helvetica", 16))
@@ -51,7 +66,8 @@ class Screen3(ttk.Frame):
         self.out_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         self.out_vars = {
             "limit": tk.StringVar(value=self.controller.config.display_params["limit_results"] or ""),
-            "sort_str": tk.StringVar(value=self.controller.config.display_params["sort_key"]),
+            # --- MODIFIED: Use a StringVar for the Combobox selection ---
+            "sort_str": tk.StringVar(),
             "sort_reverse": tk.BooleanVar(value=self.controller.config.display_params["sort_reverse"])
         }
         self.limit_label = ttk.Label(self.out_frame)
@@ -61,7 +77,11 @@ class Screen3(ttk.Frame):
         self.limit_q_label.grid(row=0, column=2, sticky="w", padx=5)
         self.sort_label = ttk.Label(self.out_frame)
         self.sort_label.grid(row=1, column=0, sticky="w", padx=5, pady=2)
-        ttk.Entry(self.out_frame, textvariable=self.out_vars["sort_str"], width=20).grid(row=1, column=1, sticky="w", padx=5, pady=2)
+
+        # --- MODIFIED: Changed Entry to Combobox ---
+        self.sort_combo = ttk.Combobox(self.out_frame, textvariable=self.out_vars["sort_str"], state="readonly", width=18)
+        self.sort_combo.grid(row=1, column=1, sticky="w", padx=5, pady=2)
+
         self.sort_desc_check = ttk.Checkbutton(self.out_frame, variable=self.out_vars["sort_reverse"])
         self.sort_desc_check.grid(row=1, column=2, sticky="w")
         self.sort_q_label = ttk.Label(self.out_frame, text="(?)", cursor="question_arrow")
@@ -71,8 +91,11 @@ class Screen3(ttk.Frame):
         self.filter_frame = ttk.LabelFrame(self)
         self.filter_frame.pack(fill="x", padx=5, pady=5)
         self.filter_frame.columnconfigure(1, weight=1)
-        self.filter_vars = {"day_num_cond": tk.StringVar(), "exclude": tk.StringVar(), "include": tk.StringVar(), "must": tk.StringVar()}
-        self.day_checkbox_vars = {day: tk.IntVar(value=0) for day in ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]}
+        self.filter_vars = {
+            "day_num_cond": tk.StringVar(value="<=5"),
+            "exclude": tk.StringVar(), "include": tk.StringVar(), "must": tk.StringVar()
+        }
+        self.day_checkbox_vars = {day_key: tk.IntVar(value=0) for day_key in self.day_keys}
 
         day_filter_frame = ttk.Frame(self.filter_frame)
         day_filter_frame.grid(row=0, column=0, columnspan=3, sticky="ew", padx=5, pady=2)
@@ -82,16 +105,14 @@ class Screen3(ttk.Frame):
         self.day_num_q_label = ttk.Label(day_filter_frame, text="(?)", cursor="question_arrow")
         self.day_num_q_label.pack(side="left", padx=(0, 20))
         self.day_cbs = {}
-        for day, var in self.day_checkbox_vars.items():
-            # Create the checkbutton
-            cb = ttk.Checkbutton(day_filter_frame, text=day[:2], variable=var)
-
-            # Bind to the mouse click event instead.
+        # Iterate over the independent keys to create the checkbox widgets
+        for day_key in self.day_keys:
+            var = self.day_checkbox_vars[day_key]
+            # Create checkbox without text; text will be set in update_text
+            cb = ttk.Checkbutton(day_filter_frame, variable=var)
             cb.bind("<Button-1>", lambda event, v=var: self._on_day_checkbox_click(event, v))
-
-
             cb.pack(side="left", padx=2)
-            self.day_cbs[day] = cb
+            self.day_cbs[day_key] = cb
 
         self.exclude_label = ttk.Label(self.filter_frame)
         self.exclude_label.grid(row=1, column=0, sticky="w", padx=5, pady=2)
@@ -155,14 +176,24 @@ class Screen3(ttk.Frame):
         self.back_btn.config(text=loc.get_string('back'))
         # Handle button state for generate/cancel
         if self.generate_btn['state'] == 'disabled':
-            self.generate_btn.config(text=loc.get_string('generating_btn'))
-            self.cancel_btn.config(text=loc.get_string('cancelling_btn') if self.cancel_btn['text'] != loc.get_string('cancel_btn') else loc.get_string('cancel_btn'))
+            self.generate_btn.config(text=self.loc.get_string('generating_btn'))
+            self.cancel_btn.config(text=self.loc.get_string('cancelling_btn') if 'Cancelling' in self.cancel_btn['text'] else self.loc.get_string('cancel_btn'))
         else:
-            self.generate_btn.config(text=loc.get_string('generate_btn'))
-            self.cancel_btn.config(text=loc.get_string('cancel_btn'))
+            self.generate_btn.config(text=self.loc.get_string('generate_btn'))
+            self.cancel_btn.config(text=self.loc.get_string('cancel_btn'))
 
         self.save_output_btn.config(text=loc.get_string('save_output_btn'))
         self.log_frame.config(text=loc.get_string('output_log_label'))
+
+        current_selection_text = self.out_vars["sort_str"].get()
+        current_backend_key = None
+        for key, loc_key in SORT_OPTIONS.items():
+            if self.loc.get_string(loc_key) == current_selection_text:
+                current_backend_key = key
+                break
+        self.sort_combo['values'] = [self.loc.get_string(loc_key) for loc_key in SORT_OPTIONS.values()]
+        new_selection_text = self.loc.get_string(SORT_OPTIONS.get(current_backend_key, 'sort_by_none'))
+        self.out_vars["sort_str"].set(new_selection_text)
 
         # --- Re-create Tooltips ---
         self.tooltips['credits'] = Tooltip(self.credits_q_label, loc.get_string('credits_tooltip'))
@@ -173,8 +204,30 @@ class Screen3(ttk.Frame):
         self.tooltips['exclude'] = Tooltip(self.exclude_q_label, loc.get_string('exclude_tooltip'))
         self.tooltips['include'] = Tooltip(self.include_q_label, loc.get_string('include_tooltip'))
         self.tooltips['must'] = Tooltip(self.must_q_label, loc.get_string('must_tooltip'))
-        for day, cb in self.day_cbs.items():
-            self.tooltips[day] = Tooltip(cb, loc.get_string('day_cycle_tooltip', day=day))
+
+        for day_key, cb in self.day_cbs.items():
+            # Get the short name for the checkbox label (e.g., "Mo", "Pz")
+            short_name_loc_key = f'day_{day_key}_short'
+            cb.config(text=loc.get_string(short_name_loc_key))
+
+            # Get the full day name for the tooltip (e.g., "Monday", "Pazartesi")
+            full_name_base = self.day_key_to_loc_key_map[day_key]
+            full_name_loc_key = f'day_{full_name_base}'
+            full_day_name = loc.get_string(full_name_loc_key)
+
+            # Generate and apply the translated tooltip
+            tooltip_text = loc.get_string('day_cycle_tooltip', day=full_day_name)
+            self.tooltips[day_key] = Tooltip(cb, tooltip_text)
+
+            # --- FIX for VISUAL BUG ---
+            # Re-apply the visual state based on the underlying variable's value
+            current_state = self.day_checkbox_vars[day_key].get()
+            if current_state == 0:
+                cb.state(['!selected', '!alternate'])
+            elif current_state == 1:
+                cb.state(['selected', '!alternate'])
+            elif current_state == 2:
+                cb.state(['selected', 'alternate'])
 
     def _generate_cache_filename(self):
         config_obj = self.controller.config
@@ -182,8 +235,10 @@ class Screen3(ttk.Frame):
         req_string = json.dumps(self.controller.requirements, sort_keys=True, separators=(',', ':'))
         req_hash = hashlib.sha256(req_string.encode('utf-8')).hexdigest()[:16]
         safe_courses_name = "".join(c for c in courses_basename if c.isalnum() or c in (' ', '_')).rstrip()
-        min_cred = config_obj.generation_params["min_credit"]
-        max_cred = config_obj.generation_params["max_credit"]
+        min_cred_str = self.gen_vars["min_credit"].get().strip()
+        max_cred_str = self.gen_vars["max_credit"].get().strip()
+        min_cred = int(min_cred_str) if min_cred_str else 30
+        max_cred = int(max_cred_str) if max_cred_str else 42
         cache_filename = f"cache_{safe_courses_name}_reqs_{req_hash}_cr_{min_cred}-{max_cred}.pkl"
         return os.path.join(config_obj.paths["cache_dir"], cache_filename)
 
@@ -209,12 +264,10 @@ class Screen3(ttk.Frame):
         self.cancel_btn.config(state="normal", text=self.loc.get_string('cancel_btn'))
         self.save_output_btn.config(state="disabled")
         self.controller.toggle_lang_buttons(enabled=False) # Disable lang switching
-
         self.last_auto_save_path = None
         self.output_text.configure(state='normal')
         self.output_text.delete(1.0, tk.END)
         self.output_text.configure(state='disabled')
-
         self.queue = queue.Queue()
         # --- MODIFIED: Pass the cancel_event to the worker thread ---
         self.generation_thread = threading.Thread(
@@ -226,7 +279,7 @@ class Screen3(ttk.Frame):
         self.after(100, self.check_queue)
 
     def cancel_generation(self):
-        print(self.loc.get_string('gen_cancelled_log').strip())
+        print(f"\n--- {self.loc.get_string('gen_cancelled_log').strip()} ---")
         self.cancel_event.set()
         self.cancel_btn.config(state="disabled", text=self.loc.get_string('cancelling_btn'))
 
@@ -235,7 +288,11 @@ class Screen3(ttk.Frame):
             result = self.queue.get(block=False)
             if isinstance(result, tuple) and len(result) == 3:
                 _, result_text, auto_save_path = result
-                is_error = "--- AN ERROR OCCURRED ---" in result_text
+
+                # *** THIS IS THE FIX: PRINT THE RESULT TEXT ***
+                print(result_text)
+
+                is_error = "--- AN ERROR OCCURRED ---" in result_text or "--- BİR HATA OLUŞTU ---" in result_text
                 if not is_error:
                     print(self.loc.get_string('gen_complete_log'))
                     self.last_auto_save_path = auto_save_path
@@ -267,21 +324,30 @@ class Screen3(ttk.Frame):
             config_obj.display_params["limit_results"] = int(limit_str) if limit_str else None
             config_obj.display_params["sort_reverse"] = self.out_vars["sort_reverse"].get()
 
+            selected_sort_text = self.out_vars["sort_str"].get()
+            backend_sort_key = None
+            for key, loc_key in SORT_OPTIONS.items():
+                if self.loc.get_string(loc_key) == selected_sort_text:
+                    backend_sort_key = key
+                    break
+            config_obj.display_params["sort_key"] = backend_sort_key
+
             # ... set filters
             def parse_cs_string(s): return [item.strip() for item in s.split(',')] if s.strip() else None
 
             config_obj.display_params["filters"]["day_num_condition"] = self.filter_vars["day_num_cond"].get()
 
-            # Pass the state of the day checkboxes
-            # We convert the IntVars to a simple dictionary for portability
-            day_states = {day: var.get() for day, var in self.day_checkbox_vars.items()}
-            config_obj.display_params["filters"]["day_specific_conditions"] = day_states
+            day_states_independent = {key: var.get() for key, var in self.day_checkbox_vars.items()}
+            turkish_day_names = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
+            key_map_to_turkish = dict(zip(self.day_keys, turkish_day_names))
+            day_states_for_backend = {key_map_to_turkish[key]: value for key, value in day_states_independent.items()}
+            config_obj.display_params["filters"]["day_specific_conditions"] = day_states_for_backend
 
             # Pass the other course filters
             config_obj.display_params["filters"]["exclude_courses"] = parse_cs_string(self.filter_vars["exclude"].get())
             config_obj.display_params["filters"]["include_courses"] = parse_cs_string(self.filter_vars["include"].get())
             config_obj.display_params["filters"]["must_courses"] = parse_cs_string(self.filter_vars["must"].get())
-            config_obj.display_params["sort_key"] = self.out_vars["sort_str"].get()
+
             config_obj.input["cache"]["enabled"] = self.gen_vars["load_if_possible"].get()
             self.controller.config.requirements = self.controller.requirements
             config_obj.update()

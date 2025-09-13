@@ -102,7 +102,26 @@ class LocalizationManager:
                 'total_programs_log': "Total programs found: {count}\n",
                 'displaying_top_log': "Displaying top {count}:\n",
 
-                # Predefined Requirement Names (Keys must match screen2_builder.py)
+                # --- NEW: Sort By Options ---
+                'sort_by_none': "(Default)",
+                'sort_by_total_days': "Total Days",
+                'sort_by_total_credits': "Total Credits",
+                'sort_by_total_hours': "Total Hours",
+                'sort_by_total_courses': "Total Courses",
+
+                # --- NEW: Filter Descriptions ---
+                'filter_desc_total_days': "Total days {op} {val}",
+                'filter_desc_must_be_on': "Must be on: {days}",
+                'filter_desc_must_not_be_on': "Must NOT be on: {days}",
+                'filter_desc_excluding': "Excluding courses: {courses}",
+                'filter_desc_including_one': "Including at least one of: {courses}",
+                'filter_desc_including_all': "Must include all: {courses}",
+                'filter_desc_and': " and ",
+
+                # Predefined Requirement & Category Names
+                'cat_business': "Business Administration",
+                'cat_cs': "Computer Science",
+                'cat_general': "General",
                 'babus_area_elective': "BABUS Specialization Area Elective",
                 'babus_free_elective': "BABUS Free Elective",
                 'babus_fin_elective': "BABUS Program Elective (FIN)",
@@ -121,6 +140,22 @@ class LocalizationManager:
                 'hist201': "HIST 201 Offered Branches",
                 'hist202': "HIST 202 Offered Branches",
                 'custom_file_option': "Add from Custom File...",
+
+                # Day names for UI
+                'day_monday': "Monday",
+                'day_tuesday': "Tuesday",
+                'day_wednesday': "Wednesday",
+                'day_thursday': "Thursday",
+                'day_friday': "Friday",
+                'day_saturday': "Saturday",
+                'day_sunday': "Sunday",
+                'day_mon_short': "Mo",
+                'day_tue_short': "Tu",
+                'day_wed_short': "We",
+                'day_thu_short': "Th",
+                'day_fri_short': "Fr",
+                'day_sat_short': "Sa",
+                'day_sun_short': "Su",
             },
             'tr': {
                 # App & Global
@@ -180,8 +215,8 @@ class LocalizationManager:
                 'filtering_label': "Filtreleme",
                 'day_conds_label': "Gün Koşulları:",
                 'exclude_courses_label': "Bu Dersleri Hariç Tut:",
-                'include_one_label': "Bunlardan En Az Biri Olsun:",
-                'must_have_label': "Bu Dersler Zorunlu:",
+                'include_one_label': "Bu Derslerden En Az Biri Olsun:",
+                'must_have_label': "Bu Dersler Olmalı:",
                 'generate_btn': "PROGRAMLARI OLUŞTUR",
                 'generating_btn': "Oluşturuluyor...",
                 'save_output_btn': "Çıktıyı Farklı Kaydet...",
@@ -221,7 +256,26 @@ class LocalizationManager:
                 'total_programs_log': "Toplam {count} program bulundu\n",
                 'displaying_top_log': "İlk {count} program gösteriliyor:\n",
 
-                # Predefined Requirement Names
+                # --- NEW: Sort By Options ---
+                'sort_by_none': "(Varsayılan)",
+                'sort_by_total_days': "Toplam Gün",
+                'sort_by_total_credits': "Toplam Kredi",
+                'sort_by_total_hours': "Toplam Saat",
+                'sort_by_total_courses': "Toplam Ders",
+
+                # --- NEW: Filter Descriptions ---
+                'filter_desc_total_days': "Toplam gün {op} {val}",
+                'filter_desc_must_be_on': "Zorunlu günler: {days}",
+                'filter_desc_must_not_be_on': "Yasaklı günler: {days}",
+                'filter_desc_excluding': "Hariç tutulan dersler: {courses}",
+                'filter_desc_including_one': "Bunlardan en az biri dahil: {courses}",
+                'filter_desc_including_all': "Bunların tümü zorunlu: {courses}",
+                'filter_desc_and': " ve ",
+
+                # Predefined Requirement & Category Names
+                'cat_business': "İşletme",
+                'cat_cs': "Bilgisayar Mühendisliği",
+                'cat_general': "Genel",
                 'babus_area_elective': "BABUS Özelleşilen Alan Seçmeli",
                 'babus_free_elective': "BABUS Serbest Seçmeli",
                 'babus_fin_elective': "BABUS Program İçin Seçmeli (FIN)",
@@ -240,6 +294,22 @@ class LocalizationManager:
                 'hist201': "HIST 201 Açılan Şubeler",
                 'hist202': "HIST 202 Açılan Şubeler",
                 'custom_file_option': "Özel Dosyadan Ekle...",
+
+                # Day names for UI
+                'day_monday': "Pazartesi",
+                'day_tuesday': "Salı",
+                'day_wednesday': "Çarşamba",
+                'day_thursday': "Perşembe",
+                'day_friday': "Cuma",
+                'day_saturday': "Cumartesi",
+                'day_sunday': "Pazar",
+                'day_mon_short': "Pz",
+                'day_tue_short': "Sa",
+                'day_wed_short': "Ça",
+                'day_thu_short': "Pe",
+                'day_fri_short': "Cu",
+                'day_sat_short': "Ct",
+                'day_sun_short': "Pa",
             },
         }
         self.current_language = initial_language
@@ -263,7 +333,19 @@ class LocalizationManager:
         Allows for dynamic value formatting.
         """
         try:
-            string_template = self.language_data[self.current_language].get(key, f"_{key}_")
-            return string_template.format(**kwargs)
+            # Get the value, which could be a string or a list
+            value = self.language_data[self.current_language].get(key, f"_{key}_")
+
+            # *** THIS IS THE FIX ***
+            # Only format if the value is a string and there are args to format with
+            if isinstance(value, str) and kwargs:
+                return value.format(**kwargs)
+
+            # Otherwise, return the value directly (handles strings without placeholders and lists)
+            return value
+
         except KeyError:
-            return f"_{key}_" # Return a noticeable error string if key is missing
+            return f"_{key}_"
+        except Exception as e:
+            print(f"Error in get_string for key '{key}': {e}")
+            return f"_{key}_ERROR_"

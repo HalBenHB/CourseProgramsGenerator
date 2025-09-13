@@ -92,6 +92,12 @@ class Config:
         Programmatically builds a filter function and its description string
         without using eval().
         """
+
+        loc = self.loc
+        if not loc: # Fallback for non-GUI runs
+            loc = type('obj', (object,), {'get_string': lambda self, key, **kwargs: key.format(**kwargs) if kwargs else key})()
+
+
         # A list to hold individual filter functions (lambdas)
         filters = []
         # A list to hold human-readable descriptions of the active filters
@@ -113,7 +119,8 @@ class Config:
 
                     # Create the actual function for this filter
                     filters.append(lambda p, op=op_func, v=value: op(p['total_days'], v))
-                    descriptions.append(f"Total days {op_str} {value}")
+                    descriptions.append(loc.get_string('filter_desc_total_days', op=op_str, val=value))
+
                 except (ValueError, TypeError):
                     print(f"Warning: Could not parse day number condition '{condition_str}'. Skipping this filter.")
 
@@ -127,35 +134,35 @@ class Config:
             # Add a filter function for days that MUST be included
             if must_have_days:
                 filters.append(lambda p, required=must_have_days: required.issubset(p['days']))
-                descriptions.append(f"Must be on: {', '.join(sorted(must_have_days))}")
+                descriptions.append(loc.get_string('filter_desc_must_be_on', days=', '.join(sorted(must_have_days))))
 
             # Add a filter function for days that MUST be excluded
             if must_not_have_days:
                 filters.append(lambda p, forbidden=must_not_have_days: forbidden.isdisjoint(p['days']))
-                descriptions.append(f"Must NOT be on: {', '.join(sorted(must_not_have_days))}")
+                descriptions.append(loc.get_string('filter_desc_must_not_be_on', days=', '.join(sorted(must_not_have_days))))
 
-        # --- 2. Exclude Courses Filter ---
+        # --- 3. Exclude Courses Filter ---
         exclude_courses = self.display_params['filters']['exclude_courses']
         if exclude_courses:
             exclude_set = set(exclude_courses)
             filters.append(lambda p, es=exclude_set: es.isdisjoint(p['courses']))
-            descriptions.append(f"Excluding courses: {', '.join(exclude_courses)}")
+            descriptions.append(loc.get_string('filter_desc_excluding', courses=', '.join(exclude_courses)))
 
-        # --- 3. Include Courses Filter (At least one) ---
+        # --- 4. Include Courses Filter (At least one) ---
         include_courses = self.display_params['filters']['include_courses']
         if include_courses:
             include_set = set(include_courses)
             # A program is valid if its course set is NOT disjoint (i.e., has an intersection)
             filters.append(lambda p, inc_s=include_set: not inc_s.isdisjoint(p['courses']))
-            descriptions.append(f"Including at least one of: {', '.join(include_courses)}")
+            descriptions.append(loc.get_string('filter_desc_including_one', courses=', '.join(include_courses)))
 
-        # --- 4. Must Have Courses Filter (All of them) ---
+        # --- 5. Must Have Courses Filter (All of them) ---
         must_courses = self.display_params['filters']['must_courses']
         if must_courses:
             must_set = set(must_courses)
             # A program is valid if the 'must_set' is a subset of the program's course set
             filters.append(lambda p, ms=must_set: ms.issubset(p['courses']))
-            descriptions.append(f"Must include all: {', '.join(must_courses)}")
+            descriptions.append(loc.get_string('filter_desc_including_all', courses=', '.join(must_courses)))
 
         # --- Combine all active filters into a single function ---
         if not filters:
@@ -175,7 +182,7 @@ class Config:
             }
             return all(f(program_with_sets) for f in filters)
 
-        return (final_filter, " and ".join(descriptions))
+        return (final_filter, loc.get_string('filter_desc_and').join(descriptions))
 
     def update(self):
         """

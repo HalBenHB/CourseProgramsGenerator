@@ -162,19 +162,20 @@ class Screen2(ttk.Frame):
             self.req_tree.delete(i)
 
         categories = {}
-        # Manually handle category names if they need translation
-        cat_map = {
-            "Business Administration": "Business Administration",
-            "Computer Science": "Computer Science",
-            "General": "General"
+        # Map original English category names to their new localization keys
+        cat_key_map = {
+            "Business Administration": "cat_business",
+            "Computer Science": "cat_cs",
+            "General": "cat_general"
         }
 
         # *** THIS IS THE CORRECTED LOOP ***
         for key, data in self.PREDEFINED_REQS_KEYS.items():
             cat_name = data["category"]
             if cat_name not in categories:
-                # Use the cat_map for potential future translation of categories themselves
-                categories[cat_name] = self.req_tree.insert("", "end", text=cat_map[cat_name], open=True)
+                cat_loc_key = cat_key_map[cat_name] # e.g., "cat_business"
+                translated_cat_name = loc.get_string(cat_loc_key)
+                categories[cat_name] = self.req_tree.insert("", "end", text=translated_cat_name, open=True)
 
             translated_name = loc.get_string(key)
             # Store the language-independent KEY in values, but display the translated name
@@ -293,8 +294,15 @@ class Screen2(ttk.Frame):
     def update_requirement_from_editor(self, *args):
         if self.currently_editing_req_index is None: return
         req = self.controller.requirements[self.currently_editing_req_index]
+
+        # --- MODIFIED: Add validation for the number ---
+        num = self.editor_needed_num_var.get()
+        if not num.strip().isdigit(): # Check if it's not a number (handles empty strings too)
+            num = "1" # Default to 1 if invalid
+
         req['name'] = self.editor_name_var.get()
-        req['needed'] = f"{self.editor_needed_op_var.get()}{self.editor_needed_num_var.get()}"
+        req['needed'] = f"{self.editor_needed_op_var.get()}{num}"
+
         display_text = f"REQ: {req['name']} | Needed: {req['needed']} | Candidates: {len(req.get('candidates', []))}"
         self.req_listbox.delete(self.currently_editing_req_index)
         self.req_listbox.insert(self.currently_editing_req_index, display_text)

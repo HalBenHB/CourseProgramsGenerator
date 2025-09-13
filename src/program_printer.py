@@ -1,5 +1,21 @@
 from src.program_generator import time_to_minutes
 
+# --- NEW: Map translated day names back to the Turkish names found in the data file ---
+# This allows us to look up schedule data regardless of the display language.
+DAY_NAME_MAP_TO_TURKISH = {
+    "Monday": "Pazartesi",
+    "Tuesday": "Salı",
+    "Wednesday": "Çarşamba",
+    "Thursday": "Perşembe",
+    "Friday": "Cuma",
+    # Add Turkish-to-Turkish mapping for when the language is 'tr'
+    "Pazartesi": "Pazartesi",
+    "Salı": "Salı",
+    "Çarşamba": "Çarşamba",
+    "Perşembe": "Perşembe",
+    "Cuma": "Cuma",
+}
+
 def format_program_info(program, courses, include_schedule, loc_manager):
     loc = loc_manager
     program_output = loc.get_string('program_header', index=program['program_index'])
@@ -44,9 +60,16 @@ def format_program_schedule(program, courses, loc_manager):
 
     calendar_grid = {day: [""] * len(time_slots_display) for day in day_order}  # Initialize empty grid
 
-    for day in day_order:
-        if day in schedule_by_day:
-            for entry in schedule_by_day[day]:
+    # --- MODIFIED LOGIC ---
+    # Loop through the DISPLAY day names (e.g., "Monday", "Tuesday")
+    for display_day in day_order:
+        # Use the map to find the corresponding DATA key (e.g., "Pazartesi", "Salı")
+        data_day_key = DAY_NAME_MAP_TO_TURKISH.get(display_day)
+
+        # Check if we have any scheduled items for that day in our data
+        if data_day_key and data_day_key in schedule_by_day:
+            # If so, iterate through the schedule entries for that day
+            for entry in schedule_by_day[data_day_key]:
                 start_minute = time_to_minutes(entry['interval'].split('-')[0].replace('.', '.'))
                 end_minute = time_to_minutes(entry['interval'].split('-')[1].replace('.', '.'))
 
@@ -62,7 +85,8 @@ def format_program_schedule(program, courses, loc_manager):
                 if start_slot_index != -1 and end_slot_index != -1:
                     for slot_index in range(start_slot_index, end_slot_index):
                         if 0 <= slot_index < len(time_slots_display):  # Safety check for index range
-                            calendar_grid[day][slot_index] = entry['course_code']  # Put course code in slot
+                            # Populate the grid using the DISPLAY day name as the key
+                            calendar_grid[display_day][slot_index] = entry['course_code']  # Put course code in slot
 
     schedule_output += format_calendar_grid(calendar_grid, day_order,
                                             time_slots_display, loc)  # Call helper for grid printing
@@ -145,7 +169,6 @@ def list_programs(programs, courses, loc_manager, filter_function=None, sort_fun
 
             program["program_index"] = i + 1
             program_output = format_program_info(program, courses, include_schedule, loc)
-
             output_parts.append(program_output) # Append to the list (very fast)
 
             # --- THE UI OPTIMIZATION ---
