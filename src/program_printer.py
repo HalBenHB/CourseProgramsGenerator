@@ -98,39 +98,38 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
                   save_txt=None, include_schedule=None, limit_results=None, filter_description=None,
                   sort_description=None, sort_reverse=False, cancel_event=None):
 
-    # --- CHANGE 1: Initialize an empty LIST, not a string ---
     output_parts = []
-
     if cancel_event and cancel_event.is_set():
-        return [], ""
+        return [], "".join(output_parts)
 
     summarized_programs = programs
     if filter_function:
         summarized_programs = list(filter(filter_function, summarized_programs))
-        if print_wanted or save_txt:
-            output_parts.append("Filter functions: " + filter_description + "\n")
-            print(f"Filtered. Remained {len(summarized_programs)} programs")
+        output_parts.append("Filter functions: " + filter_description + "\n")
+        print(f"Filtered. Remained {len(summarized_programs)} programs")
 
     # --- NEW: Check for cancellation before sorting ---
     if cancel_event and cancel_event.is_set():
-        return [], ""
+        return [], "".join(output_parts)
 
     if sort_function:
         summarized_programs = sorted(summarized_programs, key=sort_function, reverse=sort_reverse)
-        if print_wanted or save_txt:
-            output_parts.append("Sorted by: " + sort_description + (" (Descending)" if sort_reverse else "") + "\n")
-            print(f"Sorted by: {sort_description}" + (" (Descending)" if sort_reverse else ""))
+        output_parts.append("Sorted by: " + sort_description + (" (Descending)" if sort_reverse else "") + "\n")
+        print(f"Sorted by: {sort_description}" + (" (Descending)" if sort_reverse else ""))
+
+    output_parts.append("Total programs found: " + str(len(summarized_programs)) + "\n")
 
     if print_wanted or save_txt:
         programs_to_print = summarized_programs[:limit_results] if limit_results else summarized_programs
         total_to_process = len(programs_to_print)
 
-        output_parts.append("Total programs found: " + str(len(summarized_programs)) + "\n")
         if limit_results:
             output_parts.append(f"Displaying top {min(limit_results, total_to_process)}:\n")
 
+        print("\r\r\r")  # A newline before progress bar
         for i, program in enumerate(programs_to_print):
             if cancel_event and cancel_event.is_set():
+                output_parts.append(f"Formatting cancelled.\n")
                 print("\nFormatting cancelled.")
                 # Return what we have formatted so far
                 final_output_text = "".join(output_parts)
@@ -144,33 +143,32 @@ def list_programs(programs, courses, filter_function=None, sort_function=None, p
             program["program_index"] = i + 1
             program_output = format_program_info(program, courses, include_schedule)
 
-            # --- CHANGE 2: Append to the list (very fast) ---
-            output_parts.append(program_output)
+            output_parts.append(program_output) # Append to the list (very fast)
 
             # --- THE UI OPTIMIZATION ---
             # Only print a progress update periodically, not on every single iteration.
             # The modulo operator (%) is perfect for this.
             progress_update_number = 100 if total_to_process<=20000 else 1000
             if (i + 1) % progress_update_number == 0 or (i + 1) == total_to_process:
-                print(f'\rOutput generated: {i + 1}/{total_to_process}', end='', flush=True)
+                print(f'\r\nOutput generated: {i + 1}/{total_to_process}', end='', flush=True)
 
         print() # Final newline after progress bar
 
-        # --- CHANGE 3: Join the list into a single string ONCE at the end ---
-        final_output_text = "".join(output_parts)
+    # --- CHANGE 3: Join the list into a single string ONCE at the end ---
+    final_output_text = "".join(output_parts)
 
-        if print_wanted:
-            # Note: printing a massive string to the console can itself be slow.
-            # This is a limitation of the terminal, not the Python script.
-            print(final_output_text)
+    if print_wanted:
+        # Note: printing a massive string to the console can itself be slow.
+        # This is a limitation of the terminal, not the Python script.
+        print(final_output_text)
 
-        if save_txt:
-            try:
-                with open(save_txt, 'w', encoding='utf-8') as f:
-                    f.write(final_output_text)
-                print(f"\nPrograms saved to '{save_txt}'")
-            except Exception as e:
-                print(f"Error saving to '{save_txt}': {e}")  # Handle potential file writing errors
+    if save_txt:
+        try:
+            with open(save_txt, 'w', encoding='utf-8') as f:
+                f.write(final_output_text)
+            print(f"\nPrograms saved to '{save_txt}'")
+        except Exception as e:
+            print(f"Error saving to '{save_txt}': {e}")  # Handle potential file writing errors
 
     if return_wanted:
         if not output_parts:

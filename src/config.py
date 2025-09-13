@@ -182,7 +182,9 @@ class Config:
         have been applied to the object.
         """
         # --- 1. Set up base paths ---
-        self.paths["root"] = os.path.dirname(os.path.dirname(__file__))
+        if not self.paths.get("root"):
+            self.paths["root"] = os.path.dirname(os.path.dirname(__file__))
+
         self.paths["input_dir"] = os.path.join(self.paths["root"], "data", "input")
         self.paths["output_dir"] = os.path.join(self.paths["root"], "data", "output")
 

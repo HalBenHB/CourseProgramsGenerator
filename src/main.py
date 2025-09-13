@@ -89,6 +89,7 @@ def run_program_generation(config_obj, cancel_event=None):
     if auto_save_path:
         output_str += f"\nFormatted output also saved to file: {auto_save_path}\n"
 
+    output_str += f"\n--- PROGRAMS ---\n"
     output_str += formatted_output
     return summarized_programs, output_str, auto_save_path
 
