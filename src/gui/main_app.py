@@ -15,6 +15,10 @@ class App(tk.Tk):
         self.loc.register(self.update_text) # Register App's own text updater
 
         self.geometry("950x700")
+
+        # --- NEW: Disable the maximize button and resizing ---
+        self.resizable(False, False)
+
         self.config = Config()
         self.config.loc = self.loc # Attach localization manager to config
         self.config.update()  # Initial update to build paths
