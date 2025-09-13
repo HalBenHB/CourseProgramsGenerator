@@ -53,7 +53,7 @@ class Screen1(ttk.Frame):
             config_obj = self.controller.config
             config_obj.input["courses"]["basename"] = os.path.basename(filepath)
             config_obj.update()
-            all_courses = data_manager.course_parses(config_obj.input["courses"]["filepath"])
+            all_courses = data_manager.parse_courses_from_excel(config_obj.input["courses"]["filepath"])
             self.controller.all_courses_list = all_courses
             self.controller.on_courses_loaded()
         except Exception as e:

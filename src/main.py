@@ -1,6 +1,6 @@
 # src/main.py
 from src.program_printer import list_programs
-from src.data_manager import course_parses, load_requirements_from_json, save_possible_programs, load_possible_programs
+from src.data_manager import load_and_parse_courses, load_requirements_from_json, save_possible_programs, load_possible_programs
 from src.program_generator import generate_programs
 from src.config import Config
 import os
@@ -19,19 +19,26 @@ def run_program_generation(config_obj, cancel_event=None):
         tuple: (list of program dicts, log string, path of the auto-saved file)
 
     """
-    # Load requirements and courses based on config
-    requirements_path = config_obj.input["requirements"]["filepath"]
-    requirements = load_requirements_from_json(requirements_path)
+    requirements = load_requirements_from_json(config_obj.input["requirements"]["filepath"])
     if not requirements:
         return [], "Error: Could not load requirements file.", None
 
-    # --- CHANGED --- Pass the specific filepath now
-    courses_path = config_obj.input["courses"]["filepath"]
-    courses = course_parses(courses_path, requirements=requirements)
-    if not courses:
+    # --- MODIFIED: Use the new caching function to get ALL courses first ---
+    all_courses = load_and_parse_courses(config_obj)
+    if not all_courses:
         return [], "Error: Could not parse courses file.", None
 
-    # --- CHANGED --- Get values from the new dictionaries
+    # --- NEW: Filter the full course list based on requirements ---
+    # This keeps the caching logic clean and moves the filtering to the correct place.
+    candidate_courses = set()
+    for req in requirements:
+        if 'candidates' in req:
+            candidate_courses.update(req['candidates'])
+
+    # Create the final `courses` dictionary containing only the sections needed for this run
+    courses = {code: course_obj for code, course_obj in all_courses.items() if code in candidate_courses}
+
+    # --- The rest of the function proceeds as before ---
     programs_file = config_obj.input["cache"]["filepath"]
     min_credit = config_obj.generation_params["min_credit"]
     max_credit = config_obj.generation_params["max_credit"]
@@ -89,11 +96,9 @@ def run_program_generation(config_obj, cancel_event=None):
 
     if auto_save_path:
         output_str += f"\nFormatted output also saved to file: {auto_save_path}\n"
+    output_str += f"\n--- PROGRAMS ---\n{formatted_output}"
 
-    output_str += f"\n--- PROGRAMS ---\n"
-    output_str += formatted_output
     return summarized_programs, output_str, auto_save_path
-
 
 if __name__ == '__main__':
     print("Running main.py as a script with default config...")
