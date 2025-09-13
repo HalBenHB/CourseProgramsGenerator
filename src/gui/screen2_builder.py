@@ -125,8 +125,18 @@ class Screen2(ttk.Frame):
         self.req_tree.bind('<Button-1>', self.on_tree_click)
         self.req_tree.bind('<Double-1>', self.on_tree_double_click)
 
-        self.add_template_btn = ttk.Button(adder_frame, command=self.add_requirement_from_template)
-        self.add_template_btn.pack(pady=5)
+        # --- Create a frame for the action buttons ---
+        action_button_frame = ttk.Frame(adder_frame)
+        action_button_frame.pack(pady=5)
+
+        self.add_template_btn = ttk.Button(action_button_frame, command=self.add_requirement_from_template)
+        self.add_template_btn.pack(side="left", padx=5)
+
+        self.expand_all_btn = ttk.Button(action_button_frame, command=self._expand_all_nodes)
+        self.expand_all_btn.pack(side="left", padx=5)
+
+        self.collapse_all_btn = ttk.Button(action_button_frame, command=self._collapse_all_nodes)
+        self.collapse_all_btn.pack(side="left", padx=5)
 
     def _create_bottom_panel(self):
         """Builds the bottom navigation button bar."""
@@ -143,8 +153,16 @@ class Screen2(ttk.Frame):
         self.load_json_btn = ttk.Button(bottom_frame, command=lambda: self.load_reqs())
         self.load_json_btn.pack(side="right")
 
-        self.update_text()
-        self.update_editor_panel_state()
+    # --- NEW: Treeview control methods ---
+    def _expand_all_nodes(self):
+        """Expands all parent nodes in the Treeview."""
+        for item_id in self.req_tree.get_children():
+            self.req_tree.item(item_id, open=True)
+
+    def _collapse_all_nodes(self):
+        """Collapses all parent nodes in the Treeview."""
+        for item_id in self.req_tree.get_children():
+            self.req_tree.item(item_id, open=False)
 
     def update_text(self):
         """Update all text elements on this screen to the current language."""
@@ -161,7 +179,12 @@ class Screen2(ttk.Frame):
         self.new_req_btn.config(text=loc.get_string('new_blank_req_btn'))
         self.delete_req_btn.config(text=loc.get_string('delete_selected_btn'))
         self.adder_frame_label.config(text=loc.get_string('quick_add_req_label'))
+
+        # Update new and existing action buttons
         self.add_template_btn.config(text=loc.get_string('add_btn'))
+        self.expand_all_btn.config(text=loc.get_string('expand_all_btn'))
+        self.collapse_all_btn.config(text=loc.get_string('collapse_all_btn'))
+
         self.back_btn.config(text=loc.get_string('back'))
         self.continue_btn.config(text=loc.get_string('continue_to_config'))
         self.save_json_btn.config(text=loc.get_string('save_to_json'))
