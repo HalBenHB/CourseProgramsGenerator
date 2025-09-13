@@ -564,8 +564,18 @@ class Screen2(ttk.Frame):
         adder_frame = ttk.LabelFrame(req_list_frame)
         adder_frame.pack(fill="x", padx=5, pady=10)
         self.adder_frame_label = adder_frame
-        self.req_tree = ttk.Treeview(adder_frame, show="tree", height=8)
-        self.req_tree.pack(fill="x", expand=True, padx=5, pady=5)
+
+        # --- MODIFIED: Create a container for the Treeview and Scrollbar ---
+        tree_container = ttk.Frame(adder_frame)
+        tree_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # --- MODIFIED: Create the Scrollbar and link it ---
+        tree_scrollbar = ttk.Scrollbar(tree_container, orient="vertical")
+        tree_scrollbar.pack(side="right", fill="y")
+        self.req_tree = ttk.Treeview(tree_container, show="tree", height=8, yscrollcommand=tree_scrollbar.set)
+        self.req_tree.pack(side="left", fill="both", expand=True)
+        tree_scrollbar.config(command=self.req_tree.yview)
+
         self.req_tree.bind('<<TreeviewSelect>>', self.on_tree_select)
         self.req_tree.bind('<Double-1>', self.on_tree_double_click)
         self.add_template_btn = ttk.Button(adder_frame, command=self.add_requirement_from_template)
