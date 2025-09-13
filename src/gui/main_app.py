@@ -1,11 +1,14 @@
 import tkinter as tk
 from tkinter import ttk
+import webbrowser
+from urllib.parse import quote_plus
 
 from src.config import Config
 from src.localization import LocalizationManager
 from .screen1_setup import Screen1
 from .screen2_builder import Screen2
 from .screen3_generate import Screen3
+from .widgets import FeedbackDialog
 
 class App(tk.Tk):
     def __init__(self):
@@ -25,14 +28,20 @@ class App(tk.Tk):
         self.all_courses_list = {}
         self.requirements = []
 
-        # --- Language Switcher Frame ---
-        lang_frame = ttk.Frame(self)
-        lang_frame.pack(fill="x", padx=10, pady=(5, 0))
-        ttk.Label(lang_frame, text="Language:").pack(side="left")
-        self.lang_btn_en = ttk.Button(lang_frame, text="English", command=lambda: self.loc.set_language('en'))
+        # --- Top Bar Frame (for Language and Feedback) ---
+        top_bar_frame = ttk.Frame(self)
+        top_bar_frame.pack(fill="x", padx=10, pady=(5, 0))
+
+        # Language Switcher
+        ttk.Label(top_bar_frame, text="Language:").pack(side="left")
+        self.lang_btn_en = ttk.Button(top_bar_frame, text="English", command=lambda: self.loc.set_language('en'))
         self.lang_btn_en.pack(side="left", padx=5)
-        self.lang_btn_tr = ttk.Button(lang_frame, text="Türkçe", command=lambda: self.loc.set_language('tr'))
+        self.lang_btn_tr = ttk.Button(top_bar_frame, text="Türkçe", command=lambda: self.loc.set_language('tr'))
         self.lang_btn_tr.pack(side="left")
+
+        # --- MODIFIED: The button now opens our custom dialog ---
+        self.feedback_button = ttk.Button(top_bar_frame, command=self.show_feedback_dialog)
+        self.feedback_button.pack(side="right")
 
         # --- Main Container for Screens ---
         container = ttk.Frame(self)
@@ -47,16 +56,38 @@ class App(tk.Tk):
         self.update_text() # Set initial texts
         self.show_frame(Screen1)
 
+    def show_feedback_dialog(self):
+        """Creates and shows the custom feedback dialog."""
+        dialog = FeedbackDialog(self, self.loc, "halil.nebioglu@ozu.edu.tr")
+
+    def open_feedback_email(self):
+        """Opens the user's default email client with pre-filled fields."""
+        recipient = "halil.nebioglu@ozu.edu.tr"
+        subject = "Course Program Generator"
+
+        # URL-encode the subject to handle spaces and special characters
+        encoded_subject = quote_plus(subject)
+
+        # Construct the mailto link
+        mailto_url = f"mailto:{recipient}?subject={encoded_subject}"
+
+        # Open the link in the default mail client
+        webbrowser.open(mailto_url)
+
     def update_text(self):
         """Updates the text for the main application window."""
         self.title(self.loc.get_string('app_title'))
-        # Update button states based on current language
+
+        # Update language button state
         if self.loc.current_language == 'en':
             self.lang_btn_en.config(state="disabled")
             self.lang_btn_tr.config(state="normal")
         else:
             self.lang_btn_en.config(state="normal")
             self.lang_btn_tr.config(state="disabled")
+
+        # Update feedback button text
+        self.feedback_button.config(text=self.loc.get_string('feedback_btn'))
 
     def toggle_lang_buttons(self, enabled=True):
         """Enables or disables the language switching buttons."""

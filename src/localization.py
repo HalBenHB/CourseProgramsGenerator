@@ -13,6 +13,12 @@ class LocalizationManager:
                 'warning': "Warning",
                 'confirm_delete': "Confirm Delete",
                 'confirm_delete_msg': "Are you sure you want to delete this requirement?",
+                'feedback_btn': "Feedback",
+                'feedback_title': "Provide Feedback",
+                'feedback_instruction': "Please choose your preferred method to send feedback.",
+                'feedback_open_email_btn': "Open Email App",
+                'feedback_copy_email_btn': "Copy Email Address",
+                'feedback_copied_confirm': "halil.nebioglu@ozu.edu.tr Copied to clipboard!",
 
                 # Screen 1: Setup
                 'screen1_welcome': "Welcome!",
@@ -266,6 +272,12 @@ class LocalizationManager:
                 'warning': "Uyarı",
                 'confirm_delete': "Silmeyi Onayla",
                 'confirm_delete_msg': "Bu gereksinimi silmek istediğinizden emin misiniz?",
+                'feedback_btn': "Geri Bildirim",
+                'feedback_title': "Geri Bildirim Sağla",
+                'feedback_instruction': "Geri bildirim göndermek için tercih ettiğiniz yöntemi seçin.",
+                'feedback_open_email_btn': "E-posta Uygulamasını Aç",
+                'feedback_copy_email_btn': "E-posta Adresini Kopyala",
+                'feedback_copied_confirm': "halil.nebioglu@ozu.edu.tr Panoya kopyalandı!",
 
                 # Screen 1: Setup
                 'screen1_welcome': "Hoş Geldiniz!",
